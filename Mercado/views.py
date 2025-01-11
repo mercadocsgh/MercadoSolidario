@@ -2,12 +2,10 @@ from asyncio.proactor_events import _ProactorBasePipeTransport
 from copy import copy
 from doctest import testfile
 from email import message
-from imp import acquire_lock
 from unittest import result
 from django.shortcuts import render
 from django.utils.formats import date_format
-from pkg_resources import require
-from .models import AtendimentoRascunho, Categoria, Estoque, Atendimento, ItensAtendimento, ItensAtendimentoRascunho, ProdutoSolidario, FonteDoacao, CodBarProdSol, PessoasAtendimento
+from .models import *
 from django.db.models import Q,F,Sum
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required, permission_required
@@ -187,7 +185,7 @@ def iniciaRascunho(request):
         value = request.COOKIES.get('rascunho_id')
         assistido = request.POST.__getitem__('assistido')
         if value is None:
-            rascunho = AtendimentoRascunho.objects.create(tipo='mercado',atendente=request.user.username,data=datetime.now(),finalizado=False,solidarios=solidarios);
+            rascunho = AtendimentoRascunho.objects.create(tipo='mercado',atendente=request.user.username,data=datetime.now(),finalizado=False,solidarios=solidarios,id_assistido_id=assistido)
             if rascunho:
         #        response = HttpResponse("Rascunho de Atendimento Criado com sucesso")
                 response = HttpResponseRedirect('rascunho')
@@ -200,7 +198,7 @@ def iniciaRascunho(request):
                 return response
     rascunho = AtendimentoRascunho.objects.get(id__exact=request.COOKIES.get('rascunho_id'))
     itens = ItensAtendimentoRascunho.objects.filter(id_atendimento_id=rascunho.id)
-    produtoSolidario=ProdutoSolidario.objects.all().order_by('id_categoria','quantidade','unidade')
+    produtoSolidario=ProdutoSolidario.objects.all().filter(ativo=1).order_by('id_categoria','quantidade','unidade')
     context = {
        'rascunho':rascunho,
        'itens':itens,
@@ -217,7 +215,7 @@ def iniciaRascunhoCaixa(request):
         value = request.COOKIES.get('rascunho_id')
         assistido = request.POST.__getitem__('assistido')
         if value is None:
-            rascunho = AtendimentoRascunho.objects.create(tipo='mercado',atendente=request.user.username,data=datetime.now(),finalizado=False,solidarios=solidarios);
+            rascunho = AtendimentoRascunho.objects.create(tipo='mercadoCaixa',atendente=request.user.username,data=datetime.now(),finalizado=False,solidarios=solidarios,id_assistido_id=assistido)
             if rascunho:
         #        response = HttpResponse("Rascunho de Atendimento Criado com sucesso")
                 response = HttpResponseRedirect('rascunhoCaixa')
@@ -230,7 +228,7 @@ def iniciaRascunhoCaixa(request):
                 return response
     rascunho = AtendimentoRascunho.objects.get(id__exact=request.COOKIES.get('rascunho_id'))
     itens = ItensAtendimentoRascunho.objects.filter(id_atendimento_id=rascunho.id)
-    produtoSolidario=ProdutoSolidario.objects.all().order_by('id_categoria','quantidade','unidade')
+    produtoSolidario=ProdutoSolidario.objects.all().filter(ativo=1).order_by('id_categoria','quantidade','unidade')
     context = {
        'rascunho':rascunho,
        'itens':itens,
@@ -280,7 +278,7 @@ def codigoMercado(request):
                 # sai da classe e volta na tela de scan com a mensagem
                 rascunho = AtendimentoRascunho.objects.get(id__exact=atendimento.id)   
                 itens = ItensAtendimentoRascunho.objects.filter(id_atendimento_id=rascunho.id)
-                produtoSolidario=ProdutoSolidario.objects.all().order_by('id_categoria','quantidade','unidade')
+                produtoSolidario=ProdutoSolidario.objects.all().filter(ativo=1).order_by('id_categoria','quantidade','unidade')
                 context = {
                     'rascunho':rascunho,
                     'itens':itens,
@@ -313,7 +311,7 @@ def codigoMercado(request):
                     messages.error(request,"Produto não encontrado. Tente novamente. Se persistir, informe ao administrador do mercado. (qrok)")
                     rascunho = AtendimentoRascunho.objects.get(id__exact=request.COOKIES.get('rascunho_id'))
                     itens = ItensAtendimentoRascunho.objects.filter(id_atendimento_id=rascunho.id)
-                    produtoSolidario=ProdutoSolidario.objects.all().order_by('id_categoria','quantidade','unidade')
+                    produtoSolidario=ProdutoSolidario.objects.all().filter(ativo=1).order_by('id_categoria','quantidade','unidade')
                     context = {
                     'rascunho':rascunho,
                     'itens':itens,
@@ -353,7 +351,7 @@ def codigoMercado(request):
                 messages.error(request,"Produto não encontrado. Tente novamente. Se persistir, informe ao administrador do mercado.")
                 rascunho = AtendimentoRascunho.objects.get(id__exact=request.COOKIES.get('rascunho_id'))
                 itens = ItensAtendimentoRascunho.objects.filter(id_atendimento_id=rascunho.id)
-                produtoSolidario=ProdutoSolidario.objects.all().order_by('id_categoria','quantidade','unidade')
+                produtoSolidario=ProdutoSolidario.objects.all().filter(ativo=1).order_by('id_categoria','quantidade','unidade')
                 context = {
                     'rascunho':rascunho,
                     'itens':itens,
@@ -413,7 +411,7 @@ def codigoMercadoCaixa(request):
                 # sai da classe e volta na tela de scan com a mensagem
                 rascunho = AtendimentoRascunho.objects.get(id__exact=atendimento.id)   
                 itens = ItensAtendimentoRascunho.objects.filter(id_atendimento_id=rascunho.id)
-                produtoSolidario=ProdutoSolidario.objects.all().order_by('id_categoria','quantidade','unidade')
+                produtoSolidario=ProdutoSolidario.objects.all().filter(ativo=1).order_by('id_categoria','quantidade','unidade')
                 context = {
                     'rascunho':rascunho,
                     'itens':itens,
@@ -446,7 +444,7 @@ def codigoMercadoCaixa(request):
                     messages.error(request,"Produto não encontrado. Tente novamente. Se persistir, informe ao administrador do mercado. (qrok)")
                     rascunho = AtendimentoRascunho.objects.get(id__exact=request.COOKIES.get('rascunho_id'))
                     itens = ItensAtendimentoRascunho.objects.filter(id_atendimento_id=rascunho.id)
-                    produtoSolidario=ProdutoSolidario.objects.all().order_by('id_categoria','quantidade','unidade')
+                    produtoSolidario=ProdutoSolidario.objects.all().filter(ativo=1).order_by('id_categoria','quantidade','unidade')
                     context = {
                     'rascunho':rascunho,
                     'itens':itens,
@@ -486,7 +484,7 @@ def codigoMercadoCaixa(request):
                 messages.error(request,"Produto não encontrado. Tente novamente. Se persistir, informe ao administrador do mercado.")
                 rascunho = AtendimentoRascunho.objects.get(id__exact=request.COOKIES.get('rascunho_id'))
                 itens = ItensAtendimentoRascunho.objects.filter(id_atendimento_id=rascunho.id)
-                produtoSolidario=ProdutoSolidario.objects.all().order_by('id_categoria','quantidade','unidade')
+                produtoSolidario=ProdutoSolidario.objects.all().filter(ativo=1).order_by('id_categoria','quantidade','unidade')
                 context = {
                     'rascunho':rascunho,
                     'itens':itens,
@@ -504,6 +502,7 @@ def codigoMercadoCaixa(request):
         }
         return render(request, 'atendimentos/atendimentos_rascunho_caixa.html', {'context':context})
 
+@login_required
 def cancelarRascunho(request):
     # if this is a POST request we need to process the form data
     if request.method == 'GET':
@@ -515,6 +514,7 @@ def cancelarRascunho(request):
         messages.success(request, "Atendimento Cancelado com sucesso")
     return response
 
+@login_required
 def removerItem(request,id=0):
     # if this is a POST request we need to process the form data
     if request.method == 'GET':
@@ -522,6 +522,47 @@ def removerItem(request,id=0):
         ItensAtendimentoRascunho.objects.filter(id=id).delete()
         messages.success(request, "Item removido com sucesso")
     return response
+
+@login_required
+def aumentarItem(request,id):
+  item = ItensAtendimentoRascunho.objects.filter(id__exact=id).first()
+  produto = ProdutoSolidario.objects.filter(id=item.id_codigo.id).first()
+  quantidade = item.quantidade
+  max_fam = produto.max_familia
+  response = HttpResponseRedirect('../rascunho')
+  if quantidade + 1 <= max_fam:
+      item.quantidade = quantidade+1
+      item.save()
+      messages.success(request, "Item acrescido com sucesso")
+      return response
+  else:
+    messages.success(request, "Item já está no máximo permitido por família.")
+    return response
+
+@login_required
+def diminuirItem(request,id):
+  item = ItensAtendimentoRascunho.objects.filter(id__exact=id).first()
+  #produto = ProdutoSolidario.objects.filter(id_exact=item.id_produto)
+  quantidade = item.quantidade
+  response = HttpResponseRedirect('../rascunho')
+  if quantidade - 1 >= 1 :
+      item.quantidade = quantidade-1
+      item.save()
+      messages.success(request, "Item reduzido com sucesso")
+      return response
+  else:
+    messages.success(request, "Item já está no mínimo permitido por família.")
+    return response
+
+@login_required
+def alterarItem(request,id=0):
+    # if this is a POST request we need to process the form data
+    if request.method == 'GET':
+        response = HttpResponseRedirect('../rascunho')
+        ItensAtendimentoRascunho.objects.filter(id=id).delete()
+        messages.success(request, "Item removido com sucesso")
+    return response
+
 
 @login_required
 def concluirAtendimento(request):
@@ -551,8 +592,10 @@ def concluirAtendimento(request):
             for item in itens:
               estoques = Estoque.objects.filter(id_produto=item.id_codigo,validade=item.validade)
               for estoque in estoques:
+                if estoque.quantidade - estoque.quantidade_saida >= item.quantidade:
                   estoque.quantidade_saida = estoque.quantidade_saida + item.quantidade
                   estoque.save()
+                  break
         # se não tiver todos os itens gera mensagem de erro.
         else:
             response = HttpResponseRedirect("rascunho")
@@ -560,7 +603,10 @@ def concluirAtendimento(request):
             return response
         # copia a tabela para a tabela atendimento
         kwargs = model_to_dict(rascunho,exclude=['id'])
+        assistido = rascunho.id_assistido
         kwargs['data'] = datetime.now()
+        kwargs['id_assistido'] = assistido
+        kwargs['data_hora_inicio'] = rascunho.data_hora_inicio
         atendimento = Atendimento.objects.create(**kwargs)
         # copia os itens da tabela itensRascunho para a tabela itens
         for item in itens:
@@ -655,4 +701,36 @@ def relatoriosNecessidadePeriodo(request):
         'estoques' : estoques
     }
     return render(request,'relatorios/necessidade_periodo.html',{ 'context': context })
+
+@login_required
+def relatorioAtendimentoVoluntario(request):
+    if request.method == 'GET':
+      # Se for o primeiro GET (a partir do menu) mostra o relátorio do mês corrente
+      #https://stackoverflow.com/questions/37396329/finding-first-day-of-the-month-in-python
+      #https://www.tutorialspoint.com/number-of-days-in-a-month-in-python#:~:text=Practical%20Data%20Science%20using%20Python&text=Suppose%20we%20have%20one%20year,then%20the%20result%20is%2029.&text=if%20m%20is%20in%20the,31%2C%20otherwise%2C%20return%2030.
+      inicial = datetime.today().replace(day=1)
+      final  = datetime.today().replace(day=numberOfDays( inicial.year,inicial.month ))
+    else:
+      # se for um POST
+      inicial = datetime.strptime(request.POST.__getitem__('inicial'), '%d/%m/%Y').date()
+      final  = datetime.strptime(request.POST.__getitem__('final'), '%d/%m/%Y').date()
+
+    with connection.cursor() as cursor:
+        cursor.execute(
+            'select atendente, count(atendente) as quantidade,  \
+                ceiling(avg(timestampdiff(MINUTE,data_hora_inicio,data_hora_termino))) as tempo_medio \
+                from mercado_atendimento \
+                where data_hora_inicio is not null and data_hora_termino is not null and \
+                data >= \''+ str(inicial) +'\' and data<=\''+ str(final) +
+                '\' group by atendente order by atendente'
+            )
+        row = cursor.fetchall()
+        atendimentos = fromCursorToTableData(cursor, row)
+
+    context = {
+        'atendimentos' : atendimentos,
+        'inicial': inicial,
+        'final': final,
+    }
+    return render(request,'relatorios/atendimentos_voluntario.html',{ 'context': context })
 
