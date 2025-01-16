@@ -76,7 +76,25 @@ $(document).ready(function(){
     }
 });
 </script>
+<!-- Informa os ícones para usar como webapp -->
+<link rel="manifest" href="{% static 'manifest.json' %}">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/images/icon-180.png">
+<link rel="apple-touch-icon" sizes="167x167" href="/static/images/icon-167.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/static/images/icon-152.png">
+<link rel="apple-touch-icon" sizes="120x120" href="/static/images/icon-120.png">
+<script type="text/javascript" charset="utf8">
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+      navigator.serviceWorker.register('/service-worker.js')
+      .then(function(registration) {
+        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+      }, function(err) {
+        console.error('ServiceWorker registration failed: ', err);
+      });
+  });
+}
 
+</script>
 <title>Mercado Solidário</title>
 
 </head>
