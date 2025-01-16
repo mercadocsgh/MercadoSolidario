@@ -719,7 +719,7 @@ def relatorioAtendimentoVoluntario(request):
         cursor.execute(
             'select atendente, count(atendente) as quantidade,  \
                 ceiling(avg(timestampdiff(MINUTE,data_hora_inicio,data_hora_termino))) as tempo_medio \
-                from mercado_atendimento \
+                from Mercado_atendimento \
                 where data_hora_inicio is not null and data_hora_termino is not null and \
                 data >= \''+ str(inicial) +'\' and data<=\''+ str(final) +
                 '\' group by atendente order by atendente'
