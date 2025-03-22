@@ -45,16 +45,12 @@
               <tr>
                   <td>{{ produto.produto}}</td>
                   <td style="text-align:center;">{{ produto.tot_itens }}</td>
-                  {% for estoque in context.estoques %}
-                    {% if produto.produto == estoque.produto %}
-                      <td style="text-align:center;">{{ estoque.quantidade }}</td>
-                      {% if estoque.quantidade >= produto.tot_itens %}
+                      <td style="text-align:center;">{{ produto.estoque }}</td>
+                      {% if produto.acao == 'Estoque OK' %}
                         <td style="background-color: green;">Estoque OK</td>
                       {% else %}
-                        <td style="background-color: red;color:white;font-weight: bold;">Falta pelo menos {{ produto.tot_itens|sub:estoque.quantidade }} </td>
+                        <td style="background-color: red;color:white;font-weight: bold;">Falta pelo menos {{ produto.acao }} </td>
                       {% endif %}
-                    {% endif %}
-                  {% endfor %} 
               </tr>
               {% endfor %}
 

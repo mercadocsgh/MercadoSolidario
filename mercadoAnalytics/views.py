@@ -92,12 +92,12 @@ def config(request):
 	#Recupera os produtos doados em cada dia de atendimento
 	result = ''
 	with connection.cursor() as cursor:
-		cursor.execute('SELECT * FROM VW_ANALISE_PREVISAO')
+		cursor.execute('SELECT * FROM Mercado_vw_analise_previsao')
 		row = cursor.fetchall()
 		result = fromCursorToTableData(cursor, row)
     
 	#TODO verificar se esta buscando no banco duas vezes
-	df = pd.read_sql('SELECT * FROM VW_ANALISE_PREVISAO',
+	df = pd.read_sql('SELECT * FROM Mercado_vw_analise_previsao',
                  connection,
                  parse_dates={"data":"%d-%m-%Y"})
 				 
@@ -484,7 +484,7 @@ def atendimento_anterior_data(request, data):
 def verifica_estoque_produto(nome_produto):
 	result = ''
 	with connection.cursor() as cursor:
-		cursor.execute('SELECT * FROM vw_estoque_produto_solidario')
+		cursor.execute('SELECT * FROM Mercado_vw_estoque_produto_solidario')
 		row = cursor.fetchall()
 		result = fromCursorToTableData(cursor, row)
     

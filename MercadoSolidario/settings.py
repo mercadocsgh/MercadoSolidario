@@ -59,7 +59,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'api',
 	 'mercadoAnalytics',
-    'pwa'
+    'pwa',
+    'django_extensions'
 ]
 
 MIDDLEWARE = [
@@ -262,3 +263,4 @@ PWA_APP_SCREENSHOTS = [
       "type": "image/png"
     }
 ]
+

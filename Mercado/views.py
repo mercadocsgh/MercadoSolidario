@@ -578,29 +578,29 @@ def concluirAtendimento(request):
         itens = ItensAtendimentoRascunho.objects.filter(id_atendimento_id=rascunho.id)
         
         # verifica se há itens no estoque que podem ser dado baixa.
-        flag = 0
-        for item in itens:
-            #print(codProdSol)
-            estoques = Estoque.objects.filter(id_produto=item.id_codigo,validade=item.validade)
-            for estoque in estoques:
-              if estoque.quantidade - estoque.quantidade_saida >= item.quantidade:
-                flag += 1
-                break
+        #flag = 0
+        #for item in itens:
+        #    #print(codProdSol)
+        #    estoques = Estoque.objects.filter(id_produto=item.id_codigo,validade=item.validade)
+        #    for estoque in estoques:
+        #      if estoque.quantidade - estoque.quantidade_saida >= item.quantidade:
+        #        flag += 1
+        #        break
        
         # se tiver todos os itens dá baixa no estoque
-        if len(itens) == flag:
-            for item in itens:
-              estoques = Estoque.objects.filter(id_produto=item.id_codigo,validade=item.validade)
-              for estoque in estoques:
-                if estoque.quantidade - estoque.quantidade_saida >= item.quantidade:
-                  estoque.quantidade_saida = estoque.quantidade_saida + item.quantidade
-                  estoque.save()
-                  break
+        #if len(itens) == flag:
+        for item in itens:
+            estoques = Estoque.objects.filter(id_produto=item.id_codigo,validade=item.validade)
+            for estoque in estoques:
+            #  if estoque.quantidade - estoque.quantidade_saida >= item.quantidade:
+                estoque.quantidade_saida = estoque.quantidade_saida + item.quantidade
+                estoque.save()
+                break
         # se não tiver todos os itens gera mensagem de erro.
-        else:
-            response = HttpResponseRedirect("rascunho")
-            messages.error(request, "Para um ou mais itens não foi encontrado estoque suficiente para dar baixa.")
-            return response
+        #else:
+        #    response = HttpResponseRedirect("rascunho")
+        #    messages.error(request, "Para um ou mais itens não foi encontrado estoque suficiente para dar baixa.")
+        #    return response
         # copia a tabela para a tabela atendimento
         kwargs = model_to_dict(rascunho,exclude=['id'])
         assistido = rascunho.id_assistido
@@ -693,12 +693,25 @@ def relatoriosNecessidadePeriodo(request):
     #print(itensAtendimentos)
     estoques = getEstoquePorProduto()
 
+    for item in itensAtendimentos:
+      flag = 0
+      for estoque in estoques:
+         if item['produto'] == estoque['produto']:
+            flag=1
+            item['estoque']=estoque['quantidade']
+            if estoque['quantidade'] >= item['tot_itens']:
+              item['acao']='Estoque OK'
+            else:
+               item['acao']='Falta pelo menos '+str(item['tot_itens']-estoque['quantidade'])
+         if flag == 0:
+            item['acao']='Falta pelo menos '+str(item['tot_itens'])
+
     context = {
         'atendimentos' : atendimentos,
         'itens_atendimentos' : itensAtendimentos,
         'inicial': inicial,
         'final': final,
-        'estoques' : estoques
+ #       'estoques' : estoques
     }
     return render(request,'relatorios/necessidade_periodo.html',{ 'context': context })
 
