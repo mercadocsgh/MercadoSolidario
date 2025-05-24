@@ -128,6 +128,54 @@ class Estoque(models.Model):
     def vence_em_noventa_dias(self):
         return self.validade < date.today()+timedelta(90)
 
+class EstoqueEntrada(models.Model):
+    id_produto = models.ForeignKey(
+       ProdutoSolidario,
+       on_delete = models.PROTECT
+    )
+    quantidade = models.IntegerField()
+    validade = models.DateField(auto_now=False, auto_now_add=False) 
+    id_fonte = models.ForeignKey(
+       FonteDoacao,
+       on_delete = models.PROTECT,
+       verbose_name = 'Fonte da Doação'
+    )
+    data = models.DateField(auto_now=False, auto_now_add=True,null=True)
+    quem_cadastrou = models.CharField(max_length=50)
+    class Meta:
+        verbose_name = "Estoque Entrada"
+        verbose_name_plural = "Estoque Entradas" 
+        ordering = ['id_produto','validade','id_fonte']
+
+class Motivo(models.Model):
+    nome = models.CharField(max_length=50, unique=True)
+    descricao = models.CharField(max_length=255,verbose_name="descrição")
+    def __str__(self):
+        return self.nome 
+    class Meta:
+        verbose_name = "Motivo da Saída"
+        verbose_name_plural = "Motivos da Saída"
+        ordering = ['nome']
+
+class EstoqueSaida(models.Model):
+    id_produto = models.ForeignKey(
+       ProdutoSolidario,
+       on_delete = models.PROTECT
+    )
+    quantidade_saida = models.IntegerField()
+    validade = models.DateField(auto_now=False, auto_now_add=False) 
+    data = models.DateField(auto_now=False, auto_now_add=True,null=True)
+    quem_cadastrou = models.CharField(max_length=50)
+    motivo = models.ForeignKey(
+       Motivo,
+       on_delete = models.PROTECT
+    )
+    comentario = models.CharField(max_length=255,null=True)
+    class Meta:
+        verbose_name = "Estoque Saida"
+        verbose_name_plural = "Estoque Saidas" 
+        ordering = ['id_produto','validade','motivo']
+
 class PessoasAtendimento(models.Model):
     nome = models.CharField(max_length=120, unique=True)
     qtd_pessoas = models.IntegerField(validators=[MinValueValidator(0),MaxValueValidator(30)])

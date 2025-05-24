@@ -11,7 +11,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth import logout
 from django.http import HttpResponseRedirect, HttpResponse
-from .forms import FormEntradaEstoqueCodBar, FormEntradaEstoqueProduto,FormAtendimento
+from .forms import *
 from datetime import date, datetime
 from django.db import connection
 from django.contrib import messages
@@ -19,7 +19,8 @@ from datetime import date, datetime
 from django.db.models.functions import Concat
 from django.forms import model_to_dict
 from django.urls import reverse
-
+from zoneinfo import ZoneInfo
+from django.utils import timezone
 # Create your views here.
 
 def logout_view(request):
@@ -118,9 +119,16 @@ def entradaEstoque(request):
                 id_fonte.id = request.POST.__getitem__('id_fonte')
                 data = datetime.now()
                 quem_cadastrou = request.POST.__getitem__('quem_cadastrou')
-                # Cria registro e mostra mensagem de sucesso.
-                estoque = Estoque.objects.create(id_produto=id_produto,quantidade=quantidade,validade=validade,id_fonte=id_fonte,quem_cadastrou=quem_cadastrou,data=data);
-                messages.success(request, "Item de Estoque Criado com Sucesso")
+                # Cria registro de entrada e mostra mensagem de sucesso.
+                estoqueEntrada = EstoqueEntrada.objects.create(id_produto=id_produto,quantidade=quantidade,validade=validade,id_fonte=id_fonte,quem_cadastrou=quem_cadastrou,data=data)
+                estoqueAtual = Estoque.objects.filter(id_produto=id_produto,validade=validade)
+                if estoqueAtual.exists():
+                  estoque = Estoque.objects.filter(id_produto=estoqueAtual.first().id_produto,validade=estoqueAtual.first().validade).update(quantidade=int(quantidade)+int(estoqueAtual.first().quantidade))
+                else:
+                  estoque = Estoque.objects.create(id_produto=id_produto,quantidade=quantidade,validade=validade,id_fonte=id_fonte,quem_cadastrou=quem_cadastrou,data=data)
+
+                messages.success(request, "Entrada de Estoque Criado com Sucesso")
+
                 # sai da classe e volta na tela de scan com a mensagem
                 return HttpResponseRedirect('../entrada/')
             else:
@@ -145,6 +153,78 @@ def entradaEstoque(request):
         form = FormEntradaEstoqueCodBar()
 
     return render(request, 'estoque/entrada_estoque_codigo.html', {'form': form})
+
+@login_required
+def saidaEstoque(request):
+   if request.method == 'GET':
+      estoque = Estoque.objects.all()
+      return render(request,'estoque/estoque_lista_saida.html', {'estoque':estoque})
+
+@login_required
+def saidaEstoqueCodigo(request):
+   # if this is a POST request we need to process the form data
+    if request.method == 'POST':
+        #print(request.POST)
+        # É o post com os dados para cadastrar
+        if request.POST.__contains__('quantidade_saida'):
+            id_estoque = request.POST.__getitem__('id_estoque')
+            estoque = Estoque.objects.filter(id=id_estoque)[0]
+            saidaEstoque=EstoqueSaida.objects.create(id_produto=estoque.id_produto,
+                                                     quantidade_saida=request.POST.__getitem__('quantidade_saida'),
+                                                     quem_cadastrou=request.user.username,
+                                                     data=datetime.now(),
+                                                     motivo=Motivo.objects.filter(id=request.POST.__getitem__('motivo')).first(),
+                                                     validade=estoque.validade,
+                                                     )
+            Estoque.objects.filter(id=estoque.id).update(
+                quantidade_saida=int(request.POST.__getitem__('quantidade_saida'))+int(estoque.quantidade_saida),
+                quantidade=int(estoque.quantidade)-int(request.POST.__getitem__('quantidade_saida')))
+            messages.success(request, "Saída de Estoque Criado com Sucesso")
+            return HttpResponseRedirect('../saida/')
+        else:
+            # É o post com o item de estoque para dar baixa. exibir o form para entrar com a quantidade.
+            estoque_id = request.POST.__getitem__('rd_produto')
+            estoque = Estoque.objects.filter(id=estoque_id).first()
+            motivos = Motivo.objects.all().order_by('nome')
+            return render(request, 'estoque/estoque_saida_codigo.html', {'estoque': estoque, 'motivos': motivos})
+
+    # se for um GET ou qq outro método, volta para a tela de listagem
+    else:
+        return redirect('Saida de estoque')
+
+    return render(request, 'estoque/estoque_saida_codigo.html')
+
+@login_required
+def listaEntradasEstoque(request):
+      # if this is a POST request we need to process the form data
+      if request.method == 'POST':
+         # se for um POST
+         inicial = datetime.strptime(request.POST.__getitem__('inicial'), '%d/%m/%Y').date()
+         final  = datetime.strptime(request.POST.__getitem__('final'), '%d/%m/%Y').date()
+      # se for um GET ou qq outro método, volta para a tela de listagem
+      else:
+         inicial = datetime.today().replace(day=1)
+         final  = datetime.today().replace(day=numberOfDays( inicial.year,inicial.month ))
+
+      listaEntradasEstoque = EstoqueEntrada.objects.all().filter(data__gte=inicial,data__lte=final).order_by('data')
+      return render(request, 'estoque/estoque_lista_todas_entradas.html', {'estoque': listaEntradasEstoque,'inicial': inicial,
+        'final': final,})
+
+@login_required
+def listaSaidasEstoque(request):
+      # if this is a POST request we need to process the form data
+      if request.method == 'POST':
+         # se for um POST
+         inicial = datetime.strptime(request.POST.__getitem__('inicial'), '%d/%m/%Y').date()
+         final  = datetime.strptime(request.POST.__getitem__('final'), '%d/%m/%Y').date()
+      # se for um GET ou qq outro método, volta para a tela de listagem
+      else:
+         inicial = datetime.today().replace(day=1)
+         final  = datetime.today().replace(day=numberOfDays( inicial.year,inicial.month ))
+        
+      listaSaidasEstoque = EstoqueSaida.objects.all().filter(data__gte=inicial,data__lte=final).order_by('data')
+      return render(request, 'estoque/estoque_lista_todas_saidas.html', {'estoque': listaSaidasEstoque,'inicial': inicial,
+        'final': final})  
 
 @login_required
 def informaSolidarios(request):
@@ -202,7 +282,8 @@ def iniciaRascunho(request):
     context = {
        'rascunho':rascunho,
        'itens':itens,
-       'produtoSolidario':produtoSolidario
+       'produtoSolidario':produtoSolidario,
+       'assistido':PessoasAtendimento.objects.all().filter(id=request.COOKIES.get('assistido')).first().nome
     }
     return render(request, 'atendimentos/atendimentos_rascunho.html', {'context':context})
 
@@ -284,7 +365,8 @@ def codigoMercado(request):
                     'itens':itens,
                     'produto':produto,
                     'codigo':codbar,
-                    'produtoSolidario':produtoSolidario
+                    'produtoSolidario':produtoSolidario,
+                    'assistido':PessoasAtendimento.objects.all().filter(id=request.COOKIES.get('assistido')).first().nome
                 }
                 return render(request, 'atendimentos/atendimentos_rascunho.html', {'context':context,'form':form})
             else:
@@ -594,6 +676,7 @@ def concluirAtendimento(request):
             for estoque in estoques:
             #  if estoque.quantidade - estoque.quantidade_saida >= item.quantidade:
                 estoque.quantidade_saida = estoque.quantidade_saida + item.quantidade
+                estoque.quantidade = estoque.quantidade - item.quantidade
                 estoque.save()
                 break
         # se não tiver todos os itens gera mensagem de erro.
@@ -628,12 +711,11 @@ def concluirAtendimento(request):
         messages.success(request, "Atendimento Encerrado com sucesso")
         response.delete_cookie('rascunho_id')
         response.delete_cookie('solidarios')
-
+        response.delete_cookies('assistido')
         return response
 
 def emDesenvolvimento(request):
     return render(request,'em_desenvolvimento.html')
-
     
 @login_required
 def relatoriosConsumoPeriodo(request):
@@ -656,6 +738,7 @@ def relatoriosConsumoPeriodo(request):
     #    result = fromCursorToTableData(cursor, row)
 
     atendimentos = Atendimento.objects.filter(data__gte=inicial,data__lte=final).values_list('id')
+
     #print(atendimentos)
     itensAtendimentos = ItensAtendimento.objects.filter(id_atendimento_id__in=atendimentos).values('produto').annotate(tot_itens=Sum('quantidade'))
     #print(itensAtendimentos)
@@ -689,7 +772,9 @@ def relatoriosNecessidadePeriodo(request):
 
     atendimentos = Atendimento.objects.filter(data__gte=inicial,data__lte=final).values_list('id')
     #print(atendimentos)
-    itensAtendimentos = ItensAtendimento.objects.filter(id_atendimento_id__in=atendimentos).values('produto').annotate(tot_itens=Sum('quantidade'))
+    ndatas = Atendimento.objects.filter(data__gte=inicial,data__lte=final).values('data').distinct().count()
+    #print(ndatas)
+    itensAtendimentos = ItensAtendimento.objects.filter(id_atendimento_id__in=atendimentos).values('produto').annotate(tot_itens=Sum('quantidade')/ndatas)
     #print(itensAtendimentos)
     estoques = getEstoquePorProduto()
 
@@ -704,6 +789,7 @@ def relatoriosNecessidadePeriodo(request):
             else:
                item['acao']='Falta pelo menos '+str(item['tot_itens']-estoque['quantidade'])
          if flag == 0:
+            item['estoque']=0
             item['acao']='Falta pelo menos '+str(item['tot_itens'])
 
     context = {
@@ -711,6 +797,7 @@ def relatoriosNecessidadePeriodo(request):
         'itens_atendimentos' : itensAtendimentos,
         'inicial': inicial,
         'final': final,
+        'ndatas': str(ndatas)
  #       'estoques' : estoques
     }
     return render(request,'relatorios/necessidade_periodo.html',{ 'context': context })
@@ -739,11 +826,47 @@ def relatorioAtendimentoVoluntario(request):
             )
         row = cursor.fetchall()
         atendimentos = fromCursorToTableData(cursor, row)
+    
+    tot_atendimentos = 0 
+    for atendimento in atendimentos:
+       tot_atendimentos += atendimento['quantidade']
 
+    nVoluntarios = 0
+    for row in atendimentos:
+        if row['atendente'] != 'N/A':
+            nVoluntarios += 1
+
+    min_inicial = Atendimento.objects.filter(data__gte=inicial,data__lte=final).values('data_hora_inicio').order_by('data_hora_inicio').first()
+    max_final = Atendimento.objects.filter(data__gte=inicial,data__lte=final).values('data_hora_termino').order_by('data_hora_termino').last()
+    
+    #ajustar para timezone local para exibir os horários. a base grava em UTC
+    hora_final=max_final['data_hora_termino']
+    hora_inicial=min_inicial['data_hora_inicio']
+    #print('hora_final',hora_final)
+    #print('hora_inicial',hora_inicial)
+
+
+    hora_inicial = timezone.localtime(hora_inicial)
+    hora_final = timezone.localtime(hora_final)
+
+    #print('hora_final',hora_final)
+    #print('hora_inicial',hora_inicial)
+
+    tempoTotalAtendimento = int((hora_final - hora_inicial).total_seconds())
+    
+    tempoTotAtendHoras    = tempoTotalAtendimento // 3600
+    tempoTotAtendMinutos  = (tempoTotalAtendimento % 3600) // 60
+    tempoTotAtendSegundos = tempoTotalAtendimento % 60
+                                               
     context = {
-        'atendimentos' : atendimentos,
-        'inicial': inicial,
-        'final': final,
-    }
+                'primeiroAtendimento':hora_inicial,
+                'ultimoAtendimento':hora_final,
+                'tempoTotalAtendimento': f'{tempoTotAtendHoras:02d}:{tempoTotAtendMinutos:02d}:{tempoTotAtendSegundos:02d}', 
+                'nAtendimentos': tot_atendimentos,
+                'nVoluntarios': nVoluntarios,
+                'tempo_medio_geral':f'{(tempoTotalAtendimento//tot_atendimentos)/60:02.2f}',
+                'atendimentos' : atendimentos,
+                }
+    
     return render(request,'relatorios/atendimentos_voluntario.html',{ 'context': context })
 

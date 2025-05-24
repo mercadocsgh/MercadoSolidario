@@ -1,6 +1,6 @@
 from django import forms
 from django.forms.models import ModelForm
-from .models import Estoque,ItensAtendimento,Atendimento,CodBarProdSol,ProdutoSolidario,Categoria,FonteDoacao
+from .models import *
 
 class FormEntradaEstoqueCodBar(forms.Form):
     codigo_produto = forms.IntegerField(required=True)
@@ -10,7 +10,7 @@ class FormEntradaEstoqueProduto(forms.Form):
     id_produto = forms.CharField(required=True,label='Produto Solidario')
     id_produto.widget.attrs['class'] = 'form-control'
     id_produto.widget.attrs['readonly'] = '1'
-    quantidade =forms.IntegerField(required=True)
+    quantidade =forms.IntegerField(required=True,min_value=1)
     quantidade.widget.attrs['class'] = 'form-control'
     dataValidade = forms.DateTimeField(required=True,widget=forms.SelectDateWidget(),label='Data de Validade')
     dataValidade.widget.attrs['class'] = 'form-control'
@@ -19,7 +19,7 @@ class FormEntradaEstoqueProduto(forms.Form):
     quem_cadastrou = forms.CharField(required=True)
     quem_cadastrou.widget.attrs['class'] = 'form-control'
     idp = forms.IntegerField(required=True,widget=forms.HiddenInput(),label="")
-    
+
 class FormAtendimento(forms.Form):
     idp = forms.IntegerField(required=True,widget=forms.HiddenInput(),label="")
     codigo_barras = forms.IntegerField(required=True,widget=forms.HiddenInput(),label="")

@@ -1,0 +1,60 @@
+[
+   {
+     "model": "Mercado.motivo",
+     "fields": {
+       "nome": "Vencido no recebimento",
+       "descricao": "Produto já foi entregue com a data de validade vencida."
+     }
+   },
+   {
+     "model": "Mercado.motivo",
+     "fields": {
+       "nome": "Vencido na prateleira",
+       "descricao": "a data de validade do produto venceu antes de podeer ter sido distribuído"
+     }
+   },
+   {
+      "model": "Mercado.motivo",
+      "fields": {
+        "nome": "Embalagem Violada",
+        "descricao": "Embalagem rompida no manuseio"
+      }
+    },
+    {
+      "model": "Mercado.motivo",
+      "fields": {
+        "nome": "Produto Estragado",
+        "descricao": "Produto dentro da validade estragou por qualquer motivo (bolor, bicho, etc)"
+      }
+    },
+    {
+      "model": "Mercado.motivo",
+      "fields": {
+        "nome": "Cesta Básica",
+        "descricao": "Produto foi utilizado para montar cesta básica."
+      }
+    },
+    {
+      "model": "Mercado.motivo",
+      "fields": {
+        "nome": "Doação Para Outra Entidade",
+        "descricao": "Produto foi entregue para outra entidade parceira"
+      }
+    },
+    {
+      "model": "Mercado.motivo",
+      "fields": {
+        "nome": "Transferência para a Prateleira",
+        "descricao": "Produto foi colocado na prateleira"
+      }
+    },
+    {
+      "model": "Mercado.motivo",
+      "fields": {
+        "nome": "Acerto ou Ajuste por Inventário",
+        "descricao": "Produto foi retirado para acerto ou ajuste de inventário"
+      }
+    }
+ 
+   ]
+ 

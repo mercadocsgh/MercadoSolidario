@@ -32,7 +32,7 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG') == 'True'
 
-ALLOWED_HOSTS = ['192.168.15.4','192.168.0.104','vitor-Inspiron-3442','localhost','mercadocs001.pythonanywhere.com','app-mercadosolidario.cidadesocial.org.br']
+ALLOWED_HOSTS = ['192.168.15.4','192.168.0.104','192.168.0.107','vitor-Inspiron-3442','localhost','mercadocs001.pythonanywhere.com','app-mercadosolidario.cidadesocial.org.br']
 
 # Restframework definition
 REST_FRAMEWORK = {
@@ -148,7 +148,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'pt-br'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Sao_Paulo'
 
 USE_I18N = True
 
@@ -264,3 +264,4 @@ PWA_APP_SCREENSHOTS = [
     }
 ]
 
+#APP_VERSION = '1.1.0'

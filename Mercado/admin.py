@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 # Register your models here.
-from .models import Categoria, ProdutoSolidario, CodBarProdSol, FonteDoacao,AtendimentoTemplate,ItensAtendimentoTemplate,Estoque,PessoasAtendimento
+from .models import *
 
 class CategoriaAdmin(admin.ModelAdmin):
     fields = ['categoria']
@@ -84,3 +84,17 @@ class PessoasAtendimentoAdmin(admin.ModelAdmin):
     list_display=('nome','qtd_pessoas','num_solidarios','ano','local','ativo')
 
 admin.site.register(PessoasAtendimento,PessoasAtendimentoAdmin)
+
+class MotivoAdmin(admin.ModelAdmin):
+    fields =['nome','descricao']
+    list_display = ('nome','descricao')
+    createonly_fields = ['nome', ]
+
+    def get_readonly_fields(self, request, obj=None):
+        readonly_fields = list(super(MotivoAdmin, self).get_readonly_fields(request, obj))
+        createonly_fields = list(getattr(self, 'createonly_fields', []))   
+        if obj:  # editing an existing object
+            readonly_fields.extend(createonly_fields)
+        return readonly_fields
+    
+admin.site.register(Motivo,MotivoAdmin)

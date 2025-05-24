@@ -31,11 +31,14 @@
 <div class="container">
   <div class="row">
     <div class="col">
+      <div>
+         <p>Número de datas consideradas para a média : <strong> {{ context.ndatas }} </strong></p>
+      </div>
       <table id="tbProdutos" class="stripe hover" style="width:100%; padding-top: 1em;  padding-bottom: 1em;">		
         <thead> 
                 <tr>
                     <th data-priority="1">Produto</th>
-                    <th data-priority="3" scope="col" style="text-align:center;">Qtd Consumida</th>
+                    <th data-priority="3" scope="col" style="text-align:center;">Qtd Média Consumida</th>
                     <th data-priority="4" scope="col" style="text-align:center;">Qtd em Estoque</th>
                     <th data-priority="2" scope="col" style="text-align:center;">Ação</th>
                 </tr>
@@ -49,7 +52,7 @@
                       {% if produto.acao == 'Estoque OK' %}
                         <td style="background-color: green;">Estoque OK</td>
                       {% else %}
-                        <td style="background-color: red;color:white;font-weight: bold;">Falta pelo menos {{ produto.acao }} </td>
+                        <td style="background-color: red;color:white;font-weight: bold;">{{ produto.acao }} </td>
                       {% endif %}
               </tr>
               {% endfor %}
