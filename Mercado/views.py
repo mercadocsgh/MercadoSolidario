@@ -711,7 +711,7 @@ def concluirAtendimento(request):
         messages.success(request, "Atendimento Encerrado com sucesso")
         response.delete_cookie('rascunho_id')
         response.delete_cookie('solidarios')
-        response.delete_cookies('assistido')
+        response.delete_cookie('assistido')
         return response
 
 def emDesenvolvimento(request):
