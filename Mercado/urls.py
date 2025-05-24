@@ -17,6 +17,7 @@ urlpatterns = [
     path('Estoque/entrada/',TemplateView.as_view(template_name='estoque/entrada_estoque.html'),name="Cadastra Estoque MS CS" ),
     path('Estoque/entrada/codigo',entradaEstoque,name="Cadastra Estoque MS CS" ),
     path('Estoque/saida/',saidaEstoque,name='Saida de estoque'),
+    path('Estoque/saida/codigo',saidaEstoqueCodigo,name='Saida de estoque codigo'),
     path('Estoque/listaentradas',listaEntradasEstoque,name='Lista de entradas de estoque'),
     path('Estoque/listasaidas',listaSaidasEstoque,name='Lista de saídas de estoque'),
     path('Atendimento/',TemplateView.as_view(template_name='atendimentos/atendimentos.html'),name='AtendimentoInicio'),
