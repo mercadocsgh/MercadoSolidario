@@ -14,8 +14,7 @@
         <thead> 
                 <tr>
                     <th>Produto</th>
-                    <th scope="col">Quantidade</th>
-                    <th scope="col">Em Estoque</th>
+                    <th scope="col" width="10%">Quantidade em Estoque e Prateleira</th>
                     <th scope="col">Data de Validade</th>
                     <th>Doador</th>
                     <th>Quem Cadastrou</th>
@@ -27,7 +26,6 @@
                 <tr>
                     <td>{{ produto.id_produto}}</td>
                     <td>{{ produto.quantidade }}</td>
-                    <td>{{ produto.em_estoque }}</td>
                     <td>{{ produto.validade }} </td>
                     <td>{{ produto.id_fonte }} </td>
                     <td>{{ produto.quem_cadastrou }} </td>
@@ -42,7 +40,8 @@
                     language: {
                     url: 'https://cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/Portuguese-Brasil.json'
                     },
-                    responsive : true
+                    responsive : true,
+                    paging: false
                 } )
                 .columns.adjust()
                 .responsive.recalc();

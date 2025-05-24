@@ -27,7 +27,38 @@
     </form>
 </div>
 <div class="container">
-  <div class="row">
+   <div class="row">
+    <div class="col text-Left">
+      <div class="container-fluid">
+            <div class="row mt-2">
+               <div class="col">
+                  <strong>Data e Hora de Início:</strong> {{ context.primeiroAtendimento|date:"d/m/Y H:i:s" }}
+               </div>
+               <div class="col">
+                  <strong>Data e Hora de Término:</strong> {{ context.ultimoAtendimento|date:"d/m/Y H:i:s" }}
+               </div>
+            </div>
+            <div class="row mt-2">
+               <div class="col">
+                  <strong>Tempo Total de Atendimento:</strong> {{ context.tempoTotalAtendimento }}
+               </div>
+               <div class="col">
+                  <strong>Total de atendimentos:</strong> {{ context.nAtendimentos }}
+               </div>
+            </div>
+            <div class="row mt-2">
+               <div class="col">
+                  <strong>Número de voluntários:</strong> {{ context.nVoluntarios }}
+               </div>
+               <div class="col">
+                  <strong>Tempo médio geral por atendimento:</strong> {{ context.tempo_medio_geral }} min
+               </div>
+            </div>
+         </div>
+
+   </div>
+   </div>
+  <div class="row mt-3">
     <div class="col">
       <table id="tbAtendimentos" class="stripe hover" style="width:100%; padding-top: 1em;  padding-bottom: 1em;">		
         <thead> 
@@ -35,7 +66,6 @@
                     <th scope="col" style="text-align:center;">Atendente</th>
                     <th scope="col" style="text-align:center;">Quantidade</th>
                     <th scope="col" style="text-align:center;">Tempo Medio (minutos)</th>
-                    <th scope="col" style="text-align:center;">Tipo</th>
                 </tr>
             </thead>
             <tbody>
@@ -44,7 +74,6 @@
                     <td>{{ atendimento.atendente}}</td>
                     <td style="text-align:center;">{{ atendimento.quantidade }}</td>
                     <td style="text-align:center;">{{ atendimento.tempo_medio }}</td>
-                    <td style="text-align:center;">{{ atendimento.tipo }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -55,7 +84,8 @@
                     language: {
                     url: 'https://cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/Portuguese-Brasil.json'
                     },
-                    responsive : true
+                    responsive : true,
+                    paging: false
                 } )
                 .columns.adjust()
                 .responsive.recalc();

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block conteudo %}
+
+<div class="container">
+  <div class="row">
+    <div class="col text-center">
+      <h2>Lista Todas Entradas - Mercado Solidário CS</h2>
+    </div>
+  </div>
+  <div class="row mt-2 mb-4 border">
+   <form method="POST" class="row align-items-end justify-content-center py-2">
+     {% csrf_token %}
+     <h3>Escolha as Datas de início e final. (padrão, mês corrente)</h3>
+     <div id="inicio-picker" class="col">
+       <div>Data Inicial</div>
+       <input id="inicial" name="inicial" type="text" value='{{ inicial|date:"d/m/Y" }}' required>
+     </div>
+     <div id="final-picker" class="col">
+       <div>Data Final</div>
+       <input id="final" name="final" type="text" value='{{ final|date:"d/m/Y"  }}' required>
+     </div>
+     <div class="col mt-2">
+       <button class="btn btn-outline-info" type="submit">Filtar pelo período</button>
+     </div>
+   </form>
+  </div>
+  <div class="row">
+    <div class="col">
+      <table id="tbProdutos" class="stripe hover" style="width:100%; padding-top: 1em;  padding-bottom: 1em;">		
+        <thead> 
+                <tr>
+                    <th>Produto</th>
+                    <th scope="col">Quantidade</th>
+                    <th scope="col">Data de Validade</th>
+                    <th>Doador</th>
+                    <th>Quem Cadastrou</th>
+                    <th>Data Cadastro</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for produto in estoque %}
+                <tr>
+                    <td>{{ produto.id_produto}}</td>
+                    <td>{{ produto.quantidade }}</td>
+                    <td>{{ produto.validade }} </td>
+                    <td>{{ produto.id_fonte }} </td>
+                    <td>{{ produto.quem_cadastrou }} </td>
+                    <td>{{ produto.data }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+         <script lang="javascript">
+            $(document).ready( function () {
+                var table = $('#tbProdutos').DataTable( {
+                    language: {
+                    url: 'https://cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/Portuguese-Brasil.json'
+                    },
+                    responsive : true
+                } )
+                .columns.adjust()
+                .responsive.recalc();
+            } );
+            inicio_div = $('#inicio-picker input').datepicker({
+              autoclose: true,
+              format: 'dd/mm/yyyy',
+            }).on('changeDate', function(e) {
+               // `e` here contains the extra attributes
+               $('#final-picker input').datepicker('clearDates');
+               
+            });
+            final_div = $('#final-picker input').datepicker({
+              autoclose: true,
+              format: 'dd/mm/yyyy'
+            })    
+
+        </script>
+    </div>
+  </div>
+</div>
+
+{% endblock conteudo %}

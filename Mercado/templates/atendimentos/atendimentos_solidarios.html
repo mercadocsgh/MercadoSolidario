@@ -19,27 +19,45 @@
             </div>
         {% else %}
           <div>
-            <div>Selecione um nome da lista:</div>
-            <select id="selectid" name="selectid" class="form-control form-control-lg" oninput="copyValue()"> 
+            <div class="text-center mt-3">
+               Selecione um nome da lista e Pressione "Continuar" para iniciar o atendimento
+            </div>
+            <div clsass="text-center mt-3">
+              <form name="formSolidarios" id="formSol" method="POST" action="rascunho">
+                 <div class="form-group mt-3">
+                  <label for="solidario">Quantidade de Solidários</label>
+                  <input type="hidden" name="assistido" id="assistido" ></input>
+                  <input type="number" name="solidario" id="solidario" class="form-control-lg text-center" required ></input>
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-primary text-center">Continuar</button>
+                </div>
+              </form>
+            </div>
+            <!--select id="selectid" name="selectid" class="form-control form-control-lg" oninput="copyValue()"> 
               <option> ------ Selecione ------- </option>
               {% for pessoa in assistidos %}
                 <option value="{{ pessoa.num_solidarios }}" data-id="{{pessoa.id}}">{{pessoa.nome}}</option> 
               {% endfor %}
-            </select>
+            </select -->
           </div>
-          <div class="text-center">Ou Digite a quantidade de solidários e pressione "Continuar" para iniciar o atendimento</div>
-          <div>
-
-            <form name="formSolidarios" id="formSol" method="POST" action="rascunho">
-              <div class="form-group">
-                <label for="solidario">Quantidade de Solidários</label>
-                <input type="hidden" name="assistido" id="assistido" ></input>
-                <input type="number" name="solidario" id="solidario" class="form-control-lg text-center" required ></input>
-                {% csrf_token %}
-              </div>
-              <button type="submit" class="btn btn-primary text-center">Continuar</button>
-            </form>
-          </div>
+          <table id="tbAssistidos">
+            <thead>
+              <th></th>
+            </thead>
+            <tbody>
+               <form name="formTmp">
+                 {% for pessoa in assistidos %}
+                  <tr class="p-0">
+                     <td class="text-start"><label>
+                        <input type="radio" name="rdAssistidos" id="{{ pessoa.id }}" data-solidarios="{{ pessoa.num_solidarios }}" value="{{ pessoa.nome }}">
+                        {{ pessoa.nome }}
+                     </label></td>
+                  </tr> 
+                 {% endfor %}
+              </form>
+            </tbody>
+          </table>
+        </div>
           <script>
             function copyValue(){
               var selecao = document.getElementById("selectid");
@@ -49,6 +67,63 @@
               $('#assistido').val(id);
             }
           </script>
+         <script>
+            // Seleciona todos os inputs do tipo radio dentro do formulário
+            const radios = document.querySelectorAll('input[name="rdAssistidos"]');
+
+            // Adiciona um listener de evento para cada botão de rádio
+            radios.forEach((radio) => {
+               radio.addEventListener('change', function() {
+                  if (this.checked) {
+                     $('#solidario').val(this.getAttribute("data-solidarios"));
+                     $('#assistido').val(this.id);
+                  };
+               });
+            });
+
+         </script>
+         <script lang="javascript">
+            function aplicarZebra() {
+               const linhas = document.querySelectorAll('#tbAssistidos tbody tr');
+               linhas.forEach((linha, index) => {
+                  if (index % 2 === 0) {
+                  linha.style.backgroundColor = '#ffffff'; // par
+                  } else {
+                  linha.style.backgroundColor = '#f2f2f2'; // ímpar
+                  }
+               });
+            };
+
+            $(document).ready( function () {
+                  var tableto = $('#tbAssistidos').DataTable( {
+                     language: {
+                     url: 'https://cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/Portuguese-Brasil.json'
+                     },
+                     responsive : true,
+                     "searching" : true,
+                     "paging" : false,
+                     //"scrollY" : "250px",
+                     "ordering" : false,
+                     "info" : false
+                  } )
+                  .responsive.recalc();
+                  setTimeout(function(){
+                  var a=0; 
+                  while ( a == 0 ) {
+                        if ($('#tbAssistidos_filter').length){a=1;}       
+                  };
+                  $('#tbAssistidos_filter').css('float','left');
+                  $('#tbAssistidos_filter').addClass('mt-1 ps-3');
+                  
+                  },2000);
+                  tableto.on('draw.dt', function() {
+                     aplicarZebra();
+                  });
+
+                  } );
+                  
+            </script>
+           
         {% endif %}
       </div>
     </div>
