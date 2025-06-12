@@ -873,7 +873,7 @@ def relatorioAtendimentoVoluntario(request):
 
 @login_required
 def produtosEntreguesPorAssistido(request):
-   assistidos= PessoasAtendimento.objects.all().order_by('nome')
+   assistidos= PessoasAtendimento.objects.all().filter(ativo=True).order_by('nome')
    if request.method == 'POST':
       #print(dict(request.POST.items()))
       inicial = datetime.strptime(request.POST.__getitem__('inicial'), '%d/%m/%Y').date()
