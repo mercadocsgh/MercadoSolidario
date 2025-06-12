@@ -22,6 +22,7 @@ from django.urls import reverse
 from zoneinfo import ZoneInfo
 from django.utils import timezone
 # Create your views here.
+import json
 
 def logout_view(request):
     logout(request)
@@ -870,3 +871,34 @@ def relatorioAtendimentoVoluntario(request):
     
     return render(request,'relatorios/atendimentos_voluntario.html',{ 'context': context })
 
+@login_required
+def produtosEntreguesPorAssistido(request):
+   assistidos= PessoasAtendimento.objects.all().order_by('nome')
+   if request.method == 'POST':
+      #print(dict(request.POST.items()))
+      inicial = datetime.strptime(request.POST.__getitem__('inicial'), '%d/%m/%Y').date()
+      final  = datetime.strptime(request.POST.__getitem__('final'), '%d/%m/%Y').date()
+      #print(inicial,final)
+      assistido = PessoasAtendimento.objects.get(id__exact=request.POST.__getitem__('assistido'))
+      atendimentos = Atendimento.objects.filter(id_assistido=assistido.id,data__gte=inicial,data__lte=final).order_by('data')
+      #print(dict(atendimentos))
+      itensAtendimentos = ItensAtendimento.objects.filter(id_atendimento_id__in=atendimentos.values_list('id')).values('id_atendimento','produto','quantidade').annotate(tot_solidarios=F('quantidade')*F('solidarios')).order_by('id_atendimento_id', 'produto')
+      #print(json.dumps(list(itensAtendimentos)))
+      context = {
+          'assistidos' : assistidos,
+          'assistido' : assistido,
+          'atendimentos' : atendimentos,
+          'itens_atendimentos' : itensAtendimentos,
+          'inicial': inicial,
+          'final': final,
+      }
+      return render(request,'relatorios/produtos_entregues.html',{ 'context': context }) 
+   else:
+      # Se for o primeiro GET (a partir do menu) mostra o relátorio do mês corrente
+      #https://stackoverflow.com/questions/37396329/finding-first-day-of-the-month-in-python
+      #https://www.tutorialspoint.com/number-of-days-in-a-month-in-python#:~:text=Practical%20Data%20Science%20using%20Python&text=Suppose%20we%20have%20one%20year,then%20the%20result%20is%2029.&text=if%20m%20is%20in%20the,31%2C%20otherwise%2C%20return%2030.
+      #assistidos = PessoasAtendimento.objects.all().order_by('nome')
+      context = {
+          'assistidos' : assistidos,
+      }
+      return render(request,'relatorios/produtos_entregues.html',{ 'context': context })

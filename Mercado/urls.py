@@ -37,6 +37,7 @@ urlpatterns = [
     path('Relatorios',TemplateView.as_view(template_name='relatorios/relatorios.html'),name='Relatórios'),
     path('Relatorios/consumo-periodo',relatoriosConsumoPeriodo,name='Consumo por Período'),
     path('Relatorios/necessidade-periodo',relatoriosNecessidadePeriodo,name='Necessidade por Período'),
-    path('Relatorios/atendimentosvoluntario',relatorioAtendimentoVoluntario,name='Atendimentos por Voluntario')
+    path('Relatorios/atendimentosvoluntario',relatorioAtendimentoVoluntario,name='Atendimentos por Voluntario'),
+    path('Relatorios/produtosporassistido',produtosEntreguesPorAssistido,name='Produtos Entregues por Assistido'),
 
 ]
