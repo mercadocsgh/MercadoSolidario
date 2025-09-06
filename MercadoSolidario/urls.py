@@ -18,6 +18,7 @@ from django.urls import path,include
 from django.views.generic import TemplateView
 from Mercado.views import *
 
+
 admin.site.site_header = "Administração do Mercado"
 admin.site.site_title  = "Administração do Mercado"
 admin.site.index_title = "Mercado Solidário"
@@ -30,7 +31,8 @@ urlpatterns = [
     path('ajuda/',TemplateView.as_view(template_name='ajuda.html'), name='Ajuda'),
     path('accounts/', include('django.contrib.auth.urls')),
     path('',TemplateView.as_view(template_name='index.html'), name='index'),
+    path('',include('pwa.urls'), name='pwa'),
 	
-	path('analise/', include('mercadoAnalytics.urls'))
+	 path('analise/', include('mercadoAnalytics.urls'))
 ]
 
