@@ -39,5 +39,6 @@ urlpatterns = [
     path('Relatorios/necessidade-periodo',relatoriosNecessidadePeriodo,name='Necessidade por Período'),
     path('Relatorios/atendimentosvoluntario',relatorioAtendimentoVoluntario,name='Atendimentos por Voluntario'),
     path('Relatorios/produtosporassistido',produtosEntreguesPorAssistido,name='Produtos Entregues por Assistido'),
+    path('Relatorios/atendidosperiodo',relatorioAtendidosPeriodo,name='Atendidos por Periodo'),
 
 ]

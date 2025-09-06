@@ -902,3 +902,46 @@ def produtosEntreguesPorAssistido(request):
           'assistidos' : assistidos,
       }
       return render(request,'relatorios/produtos_entregues.html',{ 'context': context })
+
+@login_required
+def relatorioAtendidosPeriodo(request):
+    if request.method == 'GET':
+      # Se for o primeiro GET (a partir do menu) mostra o relátorio do mês corrente
+      #https://stackoverflow.com/questions/37396329/finding-first-day-of-the-month-in-python
+      #https://www.tutorialspoint.com/number-of-days-in-a-month-in-python#:~:text=Practical%20Data%20Science%20using%20Python&text=Suppose%20we%20have%20one%20year,then%20the%20result%20is%2029.&text=if%20m%20is%20in%20the,31%2C%20otherwise%2C%20return%2030.
+      inicial = datetime.today().replace(day=1)
+      final  = datetime.today().replace(day=numberOfDays( inicial.year,inicial.month ))
+    else:
+      # se for um POST
+      inicial = datetime.strptime(request.POST.__getitem__('inicial'), '%d/%m/%Y').date()
+      final  = datetime.strptime(request.POST.__getitem__('final'), '%d/%m/%Y').date()
+
+    with connection.cursor() as cursor:
+        cursor.execute(
+            'SELECT \
+               a.id, \
+               pa.nome AS assistido, \
+               a.atendente, \
+               TIMEDIFF(COALESCE(a.data_hora_termino, NOW()), a.data_hora_inicio) AS tempo_atendimento, \
+               COALESCE(SUM(ia.solidarios), 0)                             AS solidarios_usados, \
+               a.data , \
+               a.solidarios as solidarios_disponiveis \
+               FROM mercado_atendimento AS a \
+               LEFT JOIN mercado_pessoasatendimento AS pa \
+               ON pa.id = a.id_assistido_id \
+               LEFT JOIN mercado_itensatendimento AS ia \
+               ON ia.id_atendimento_id = a.id \
+               WHERE a.data BETWEEN \''+ str(inicial) +'\'  AND \''+ str(final) + '\' \
+               AND a.data_hora_inicio IS NOT NULL \
+               GROUP BY a.id \
+               ORDER BY a.data, a.id;'    
+            )
+        row = cursor.fetchall()
+        atendimentos = fromCursorToTableData(cursor, row)
+
+    context = {
+        'atendimentos' : atendimentos,
+        'inicial': inicial,
+        'final': final,
+    }
+    return render(request,'relatorios/atendidos_periodo.html',{ 'context': context })
