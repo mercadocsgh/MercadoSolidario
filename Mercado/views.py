@@ -926,10 +926,10 @@ def relatorioAtendidosPeriodo(request):
                COALESCE(SUM(ia.solidarios), 0)                             AS solidarios_usados, \
                a.data , \
                a.solidarios as solidarios_disponiveis \
-               FROM mercado_atendimento AS a \
-               LEFT JOIN mercado_pessoasatendimento AS pa \
+               FROM Mercado_atendimento AS a \
+               LEFT JOIN Mercado_pessoasatendimento AS pa \
                ON pa.id = a.id_assistido_id \
-               LEFT JOIN mercado_itensatendimento AS ia \
+               LEFT JOIN Mercado_itensatendimento AS ia \
                ON ia.id_atendimento_id = a.id \
                WHERE a.data BETWEEN \''+ str(inicial) +'\'  AND \''+ str(final) + '\' \
                AND a.data_hora_inicio IS NOT NULL \
