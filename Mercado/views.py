@@ -923,7 +923,7 @@ def relatorioAtendidosPeriodo(request):
                pa.nome AS assistido, \
                a.atendente, \
                TIMEDIFF(COALESCE(a.data_hora_termino, NOW()), a.data_hora_inicio) AS tempo_atendimento, \
-               COALESCE(SUM(ia.solidarios), 0)                             AS solidarios_usados, \
+               COALESCE(SUM(ia.solidarios * ia.quantidade), 0)                             AS solidarios_usados, \
                a.data , \
                a.solidarios as solidarios_disponiveis \
                FROM Mercado_atendimento AS a \
