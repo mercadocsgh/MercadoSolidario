@@ -332,13 +332,13 @@ def codigoMercado(request):
         form = FormAtendimento(request.POST)
         if request.POST.__contains__('quantidade'):
             # check whether it's valid: e data de validade maior que hoje.
-            if form.is_valid() and (form.cleaned_data['dataValidade'].isoformat() >= datetime.now().isoformat()):
+            if form.is_valid() : #and (form.cleaned_data['dataValidade'].isoformat() >= datetime.now().isoformat()):
                 # save data
                 #id_produto = ProdutoSolidario(request.POST.__getitem__('idp'))
                 #id_produto.id = 
                 quantidade = request.POST.__getitem__('quantidade')
                 # com o uso do widget do forms -> validade = request.POST.__getitem__('dataValidade_year') + '-' + request.POST.__getitem__('dataValidade_month') + '-' + request.POST.__getitem__('dataValidade_day')
-                validade = request.POST.__getitem__('dataValidade')
+                #validade = request.POST.__getitem__('dataValidade')
                 # Cria registro e mostra mensagem de sucesso.
                 atendimento = AtendimentoRascunho.objects.filter(id=request.COOKIES.get('rascunho_id')).first()
                 codbar = CodBarProdSol.objects.filter(codigo_barras=request.POST.__getitem__('codigo_barras')).first()
@@ -353,7 +353,7 @@ def codigoMercado(request):
                                                                 id_codigo=codbar.id_produto,
                                                                 produto=produto,
                                                                 quantidade=quantidade,
-                                                                validade=validade,
+                                                                #validade=validade,
                                                                 solidarios=solidarios,
                                                                 )
                 messages.success(request, "Item Inserido na Lista com Sucesso")
@@ -673,14 +673,20 @@ def concluirAtendimento(request):
         # se tiver todos os itens dá baixa no estoque
         #if len(itens) == flag:
         for item in itens:
-            estoques = Estoque.objects.filter(id_produto=item.id_codigo,validade=item.validade)
+            #estoques = Estoque.objects.filter(id_produto=item.id_codigo,validade=item.validade)
+            estoques = Estoque.objects.filter(id_produto=item.id_codigo)
+            flagEstoqueOk = False
             for estoque in estoques:
-            #  if estoque.quantidade - estoque.quantidade_saida >= item.quantidade:
+              if estoque.quantidade - estoque.quantidade_saida >= item.quantidade:
                 estoque.quantidade_saida = estoque.quantidade_saida + item.quantidade
-                estoque.quantidade = estoque.quantidade - item.quantidade
+                #estoque.quantidade = estoque.quantidade - item.quantidade
                 estoque.save()
+                flagEstoqueOk = True
                 break
-        # se não tiver todos os itens gera mensagem de erro.
+            # se não tiver quantidade suficiente nos itens insere estoque negativo no primeiro item encontrado
+            if not flagEstoqueOk:
+               estoques[0].quantidade_saida = estoques[0].quantidade_saida + item.quantidade
+               estoques[0].save()
         #else:
         #    response = HttpResponseRedirect("rascunho")
         #    messages.error(request, "Para um ou mais itens não foi encontrado estoque suficiente para dar baixa.")

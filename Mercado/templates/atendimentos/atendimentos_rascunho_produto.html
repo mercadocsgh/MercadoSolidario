@@ -80,40 +80,6 @@
       </div>
     </div>
   </div>
-  <div class="row mt-2">
-    <div class="col mt_auto">
-      <div class="fieldWrapper align-items-center text-center">
-          <table class="table table-hover">
-            <thead class="table-dark">
-              <tr>
-                <th scope="col">Validade</th>
-                <th scope="col">Em Estoque</th>
-              </tr>
-            </thead>
-            <div class="myradio"> 
-            <tbody>
-
-                {% for item in context.estoque %}
-            <tr>
-              <td>
-                <input id="id_data_{{ forloop.counter0 }}" name="dataValidade"
-                       type="radio" value='{{ item.validade|date:"Y-m-d" }}' required>
-                {{ item.validade|date:"  m / Y" }}
-              </td>
-              <td>
-                {{ item.em_estoque }}
-              </td>
-             </tr>
-          {% empty %}
-            Sem Estoque
-          {% endfor %}
-
-      </tbody>
-    </div> 
-        </table>
-      </div>
-    </div>
-  </div>
   <div class="row justify-content-center">       
     <div class="mt-2 col-auto">
         <button id="btn-continue" type="submit" class="btn btn-primary text-center center mt-2">Continuar</button>

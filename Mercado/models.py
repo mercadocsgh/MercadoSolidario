@@ -213,7 +213,7 @@ class ItensAtendimentoRascunho(models.Model):
     )
     produto = models.CharField(max_length=50) # gravado para facilitar relatórios
     quantidade = models.IntegerField()
-    validade = models.DateField(auto_now=False, auto_now_add=False) 
+    validade = models.DateField(auto_now=True) 
     solidarios = models.IntegerField()
  
 class Atendimento(models.Model):
@@ -243,7 +243,7 @@ class ItensAtendimento(models.Model):
     )
     produto = models.CharField(max_length=50) # gravado para facilitar relatórios
     quantidade = models.IntegerField()
-    validade = models.DateField(auto_now=False, auto_now_add=False) 
+    validade = models.DateField(auto_now=True) 
     solidarios = models.IntegerField()
 
 class AtendimentoTemplate(models.Model):
