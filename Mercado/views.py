@@ -103,6 +103,11 @@ def getEstoquePorCategoria():
     return result
 
 @login_required
+def entradaEstoqueTemplate(request):
+   produtos = ProdutoSolidario.objects.all().filter(ativo=1).order_by('id_categoria','quantidade','unidade')
+   return render(request, 'estoque/entrada_estoque.html', {'produtos': produtos})
+
+@login_required
 def entradaEstoque(request):
     # if this is a POST request we need to process the form data
     if request.method == 'POST':

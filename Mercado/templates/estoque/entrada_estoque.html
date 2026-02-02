@@ -20,9 +20,20 @@
       <div id="reader" width="600px"></div>
       <div class="text-center mt-3">
         <form name="formCodigo" id="formCodigo" method="POST" action="codigo">
+         
+          <div class="form-group">
+            <label for="Produto">Selecione o Produto Solidário da lista:</label>
+            <select name="produto" id="produto" class="form-control-lg text-center" tabindex="0" onChange="copyCode();">
+              <option value="" disabled selected>-- Selecione o Produto --</option>
+              {% for produto in produtos %}
+              <option value="{{ produto.codigo_solidario }}">{{ produto.id_categoria }} - {{ produto.quantidade }}{{ produto.unidade }}</option>
+              {% endfor %}
+              </select>
+          </div>
+
           <div class="form-group">
             <label for="codigo">Código de barras</label>
-            <input type="number" name="codigo" id="codigo" class="form-control-lg text-center" required tabindex="0"></input>
+            <input type="number" name="codigo" id="codigo" class="form-control-lg text-center" required tabindex="0">
             {% csrf_token %}
           </div>
           <button type="submit" class="btn btn-primary text-center">Continuar</button>
@@ -60,5 +71,9 @@
   window.onload = function() {
         document.getElementById("codigo").focus();
   };
+  function copyCode() {
+    var codigo = document.getElementById("produto").value;
+    document.getElementById("codigo").value = codigo;
+  }
 </script>
 {% endblock conteudo %}
