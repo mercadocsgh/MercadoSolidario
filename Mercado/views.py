@@ -2,7 +2,8 @@ from asyncio.proactor_events import _ProactorBasePipeTransport
 from copy import copy
 from doctest import testfile
 from email import message
-from unittest import result
+from math import ceil
+from unittest import case, result
 from django.shortcuts import render
 from django.utils.formats import date_format
 from .models import *
@@ -23,6 +24,39 @@ from zoneinfo import ZoneInfo
 from django.utils import timezone
 # Create your views here.
 import json
+
+
+'''
+        gramas = 'g', _('g')
+        kg     = 'kg', _('Kg')
+        un     = 'un', _('unidade')
+        sache  = 'sache', _('sache')
+        pct    = 'pct', _('pacote')
+        pctp   = 'pctp', _('pacote peq')
+        pctg   = 'pctg', _('pacote grande')
+        ml     = 'ml', _('ml')
+        lata   = 'lata', _('lata')
+        l      = 'l', _('litro')
+        frasco = 'frasco', _('frasco')
+        pote   = 'pote', _('pote')
+
+'''
+def convert_tokg(unit, quantity):
+   match unit:
+      case 'g' | 'ml':
+         return quantity / 1000.0
+      case 'kg'|'l':
+         return quantity * 1.0  
+      case 'lata' | 'frasco' | 'un' | 'pote':
+         return quantity * 0.150  # assuming 150ml per lata
+      case 'sache':
+         return quantity * 0.050  # assuming 50g per sache
+      case 'pct' | 'pctp':           
+         return quantity * 0.100  # assuming 100g per pacote pequeno 
+      case 'pctg':
+         return quantity * 0.300  # assuming 500g per pacote grande  
+      case _:
+         return 0
 
 def logout_view(request):
     logout(request)
@@ -752,13 +786,22 @@ def relatoriosConsumoPeriodo(request):
     atendimentos = Atendimento.objects.filter(data__gte=inicial,data__lte=final).values_list('id')
 
     #print(atendimentos)
-    itensAtendimentos = ItensAtendimento.objects.filter(id_atendimento_id__in=atendimentos).values('produto').annotate(tot_itens=Sum('quantidade'))
+    itensAtendimentos = ItensAtendimento.objects.filter(id_atendimento_id__in=atendimentos).values('produto','id_codigo_id').annotate(tot_itens=Sum('quantidade'))
     #print(itensAtendimentos)
+
+    tot_kg = 0
+    for item in itensAtendimentos:
+      produto = ProdutoSolidario.objects.filter(id__exact=item['id_codigo_id']).first()
+      item['kg'] = ceil(convert_tokg(produto.unidade, item['tot_itens']))
+      
+      tot_kg += item['kg']
+
     context = {
         'atendimentos' : atendimentos,
         'itens_atendimentos' : itensAtendimentos,
         'inicial': inicial,
-        'final': final
+        'final': final,
+        'tot_kg': tot_kg
     }
     return render(request,'relatorios/consumo_periodo.html',{ 'context': context })
 

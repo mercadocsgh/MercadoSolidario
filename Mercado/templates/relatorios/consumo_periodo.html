@@ -26,6 +26,16 @@
       </div>
     </form>
 </div>
+<div class="container mt-4 mb-2 border">
+  <div class="row mt-4 mb-4">
+    <div class="col">
+      <h4>Período: {{ context.inicial|date:"d/m/Y" }} - {{ context.final|date:"d/m/Y" }}</h4>
+      </div>   
+      <div class="col text-end">
+        <h4>Total de Kg (estimado): {{ context.tot_kg }}</h4>
+      </div>
+  </div>
+</div>
 <div class="container">
   <div class="row">
     <div class="col">
@@ -33,7 +43,8 @@
         <thead> 
                 <tr>
                     <th>Produto</th>
-                    <th scope="col" style="text-align:center;">Quantidade</th>
+                    <th scope="col" style="text-align:center;">Quantidade</th>  
+                    <th scope="col" style="text-align:center;">Peso em Kg (estimado)</th>
                 </tr>
             </thead>
             <tbody>
@@ -41,6 +52,7 @@
                 <tr>
                     <td>{{ produto.produto}}</td>
                     <td style="text-align:center;">{{ produto.tot_itens }}</td>
+                    <td style="text-align:center;">{{ produto.kg }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
