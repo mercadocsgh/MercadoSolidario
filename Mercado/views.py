@@ -792,7 +792,7 @@ def relatoriosConsumoPeriodo(request):
     tot_kg = 0
     for item in itensAtendimentos:
       produto = ProdutoSolidario.objects.filter(id__exact=item['id_codigo_id']).first()
-      item['kg'] = ceil(convert_tokg(produto.unidade, item['tot_itens'])) * produto.quantidade
+      item['kg'] = ceil(convert_tokg(produto.unidade, produto.quantidade)) * item['tot_itens']
       tot_kg += item['kg']
 
     context = {
