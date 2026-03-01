@@ -48,11 +48,11 @@ def convert_tokg(unit, quantity):
       case 'kg'|'l':
          return quantity * 1.0  
       case 'lata' | 'frasco' | 'un' | 'pote':
-         return quantity * 0.150  # assuming 150ml per lata
+         return quantity * 0.100  # assuming 150ml per lata
       case 'sache':
          return quantity * 0.050  # assuming 50g per sache
       case 'pct' | 'pctp':           
-         return quantity * 0.100  # assuming 100g per pacote pequeno 
+         return quantity * 0.150  # assuming 100g per pacote pequeno 
       case 'pctg':
          return quantity * 0.300  # assuming 500g per pacote grande  
       case _:
