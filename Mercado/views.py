@@ -14,7 +14,7 @@ from django.contrib.auth import logout
 from django.http import HttpResponseRedirect, HttpResponse
 from .forms import *
 from datetime import date, datetime
-from django.db import connection
+from django.db import connection, transaction
 from django.contrib import messages
 from datetime import date, datetime
 from django.db.models.functions import Concat
@@ -688,77 +688,84 @@ def alterarItem(request,id=0):
 
 @login_required
 def concluirAtendimento(request):
-    # if this is a POST request we need to process the form data
-    if request.method == 'POST':
-        value = request.COOKIES.get('rascunho_id')
-        if not value:
-            response = HttpResponseRedirect("rascunho")
-            messages.error(request, "Atendimento já foi encerrado.")
-            return response
-        # pega os dados do post e prepara para o processamento
-        rascunho = AtendimentoRascunho.objects.get(id__exact=value)
-        itens = ItensAtendimentoRascunho.objects.filter(id_atendimento_id=rascunho.id)
-        
-        # verifica se há itens no estoque que podem ser dado baixa.
-        #flag = 0
-        #for item in itens:
-        #    #print(codProdSol)
-        #    estoques = Estoque.objects.filter(id_produto=item.id_codigo,validade=item.validade)
-        #    for estoque in estoques:
-        #      if estoque.quantidade - estoque.quantidade_saida >= item.quantidade:
-        #        flag += 1
-        #        break
-       
-        # se tiver todos os itens dá baixa no estoque
-        #if len(itens) == flag:
-        for item in itens:
-            #estoques = Estoque.objects.filter(id_produto=item.id_codigo,validade=item.validade)
-            estoques = Estoque.objects.filter(id_produto=item.id_codigo)
-            flagEstoqueOk = False
-            for estoque in estoques:
-              if estoque.quantidade - estoque.quantidade_saida >= item.quantidade:
-                estoque.quantidade_saida = estoque.quantidade_saida + item.quantidade
-                #estoque.quantidade = estoque.quantidade - item.quantidade
-                estoque.save()
-                flagEstoqueOk = True
-                break
-            # se não tiver quantidade suficiente nos itens insere estoque negativo no primeiro item encontrado
-            if not flagEstoqueOk:
-               estoques[0].quantidade_saida = estoques[0].quantidade_saida + item.quantidade
-               estoques[0].save()
-        #else:
-        #    response = HttpResponseRedirect("rascunho")
-        #    messages.error(request, "Para um ou mais itens não foi encontrado estoque suficiente para dar baixa.")
-        #    return response
-        # copia a tabela para a tabela atendimento
-        kwargs = model_to_dict(rascunho,exclude=['id'])
-        assistido = rascunho.id_assistido
-        kwargs['data'] = datetime.now()
-        kwargs['id_assistido'] = assistido
-        kwargs['data_hora_inicio'] = rascunho.data_hora_inicio
-        atendimento = Atendimento.objects.create(**kwargs)
-        # copia os itens da tabela itensRascunho para a tabela itens
-        for item in itens:
-            kwargs = model_to_dict(item,exclude=['id'])
-            kwargs['id_atendimento']=atendimento
-            tmp = ProdutoSolidario.objects.get(id__exact=kwargs['id_codigo'])
-            kwargs['id_codigo']=tmp
-            tmp = ItensAtendimento.objects.create(**kwargs)
+   # if this is a POST request we need to process the form data
+   if request.method == 'POST':
+      value = request.COOKIES.get('rascunho_id')
+      if not value:
+         response = HttpResponseRedirect("rascunho")
+         messages.error(request, "Atendimento já foi encerrado.")
+         return response
+      # pega os dados do post e prepara para o processamento
+      rascunho = AtendimentoRascunho.objects.get(id__exact=value)
+      itens = ItensAtendimentoRascunho.objects.filter(id_atendimento_id=rascunho.id)
+
+      # se tiver todos os itens dá baixa no estoque
+      #if len(itens) == flag:
+      lista_nao_encontrado = []
+      nao_encontrado = False
+      for item in itens:
+         #estoques = Estoque.objects.filter(id_produto=item.id_codigo,validade=item.validade)
+         estoques = Estoque.objects.filter(id_produto=item.id_codigo)
+         if not estoques:
+               nao_encontrado = True
+               lista_nao_encontrado.append(item.id_codigo)
+               
+      if nao_encontrado:
+         reponse = lista_nao_encontrado
+         response = HttpResponseRedirect('/Mercado/Atendimento/rascunho')
+         messages.error(request, "Para um ou mais itens não foi encontrado estoque suficiente para dar baixa. Itens sem estoque: " + str(lista_nao_encontrado))
+         return response
+      
+      else:
+         with transaction.atomic():
+            for item in itens:
+                  #estoques = Estoque.objects.filter(id_produto=item.id_codigo,validade=item.validade)
+                  estoques = Estoque.objects.filter(id_produto=item.id_codigo)
+                  flagEstoqueOk = False
+                  for estoque in estoques:
+                     if estoque.quantidade - estoque.quantidade_saida >= item.quantidade:
+                        estoque.quantidade_saida = estoque.quantidade_saida + item.quantidade
+                        #estoque.quantidade = estoque.quantidade - item.quantidade
+                        estoque.save()
+                        flagEstoqueOk = True
+                        break
+                  # se não tiver quantidade suficiente nos itens insere estoque negativo no primeiro item encontrado
+                  if not flagEstoqueOk:
+                     estoques[0].quantidade_saida = estoques[0].quantidade_saida + item.quantidade
+                     estoques[0].save()
+            #else:
+            #    response = HttpResponseRedirect("rascunho")
+            #    messages.error(request, "Para um ou mais itens não foi encontrado estoque suficiente para dar baixa.")
+            #    return response
+            # copia a tabela para a tabela atendimento
+            kwargs = model_to_dict(rascunho,exclude=['id'])
+            assistido = rascunho.id_assistido
+            kwargs['data'] = datetime.now()
+            kwargs['id_assistido'] = assistido
+            kwargs['data_hora_inicio'] = rascunho.data_hora_inicio
+            atendimento = Atendimento.objects.create(**kwargs)
+            # copia os itens da tabela itensRascunho para a tabela itens
+            for item in itens:
+                  kwargs = model_to_dict(item,exclude=['id'])
+                  kwargs['id_atendimento']=atendimento
+                  tmp = ProdutoSolidario.objects.get(id__exact=kwargs['id_codigo'])
+                  kwargs['id_codigo']=tmp
+                  tmp = ItensAtendimento.objects.create(**kwargs)
+                  
+            #Seta atendimento como concluido
+            atendimento.finalizado = True
             
-        #Seta atendimento como concluido
-        atendimento.finalizado = True
-        
-        #apaga rascunhos
-        itens = ItensAtendimentoRascunho.objects.filter(id_atendimento_id=rascunho.id).delete()
-        rascunho = AtendimentoRascunho.objects.filter(id__exact=value).delete()
-        #remove cookies
-        #retorna na tela de atendimentos
-        response = HttpResponseRedirect('/Mercado/Atendimento')
-        messages.success(request, "Atendimento Encerrado com sucesso")
-        response.delete_cookie('rascunho_id')
-        response.delete_cookie('solidarios')
-        response.delete_cookie('assistido')
-        return response
+            #apaga rascunhos
+            itens = ItensAtendimentoRascunho.objects.filter(id_atendimento_id=rascunho.id).delete()
+            rascunho = AtendimentoRascunho.objects.filter(id__exact=value).delete()
+            #remove cookies
+            #retorna na tela de atendimentos
+            response = HttpResponseRedirect('/Mercado/Atendimento')
+            messages.success(request, "Atendimento Encerrado com sucesso")
+            response.delete_cookie('rascunho_id')
+            response.delete_cookie('solidarios')
+            response.delete_cookie('assistido')
+            return response
 
 def emDesenvolvimento(request):
     return render(request,'em_desenvolvimento.html')
@@ -776,7 +783,8 @@ def relatoriosConsumoPeriodo(request):
       # se for um POST
       inicial = datetime.strptime(request.POST.__getitem__('inicial'), '%d/%m/%Y').date()
       final  = datetime.strptime(request.POST.__getitem__('final'), '%d/%m/%Y').date()
-
+      #print(inicial)
+      #print(final)
     #with connection.cursor() as cursor:
     #    cursor.execute(
     #        'select * from concat(cat.Categoria," ",pro.quantidade,pro.unidade) as produto ,sum(est.quantidade) as quantidade, pro.estoque_minimo from Mercado_estoque est, Mercado_categoria cat, Mercado_produtosolidario pro where cat.id = pro.id_categoria_id and est.id_id = pro.id group by est.id_produto_id ORDER BY produto;')
@@ -785,7 +793,7 @@ def relatoriosConsumoPeriodo(request):
 
     atendimentos = Atendimento.objects.filter(data__gte=inicial,data__lte=final).values_list('id')
 
-    #print(atendimentos)
+    #print(list(atendimentos))
     itensAtendimentos = ItensAtendimento.objects.filter(id_atendimento_id__in=atendimentos).values('produto','id_codigo_id').annotate(tot_itens=Sum('quantidade'))
     #print(itensAtendimentos)
 
@@ -920,6 +928,8 @@ def relatorioAtendimentoVoluntario(request):
                 'nVoluntarios': nVoluntarios,
                 'tempo_medio_geral':f'{(tempoTotalAtendimento//tot_atendimentos)/60:02.2f}',
                 'atendimentos' : atendimentos,
+                'inicial': inicial,
+                'final': final,
                 }
     
     return render(request,'relatorios/atendimentos_voluntario.html',{ 'context': context })
