@@ -14,9 +14,10 @@ urlpatterns = [
     path('Estoque/lista',estoque_listagem,name="Lista do Estoque MS CS" ),
     path('Estoque/listaProdSol',estoque_listagem_prodSol,name="Lista do Estoque por Produto Solidário MS CS" ),
     path('Estoque/listaValidade',estoque_listagem_validade,name="Lista do Estoque por Validade MS CS" ),
-    path('Estoque/entrada/',TemplateView.as_view(template_name='estoque/entrada_estoque.html'),name="Cadastra Estoque MS CS" ),
+    path('Estoque/entrada/',entradaEstoqueTemplate,name="Cadastra Estoque MS CS" ),
     path('Estoque/entrada/codigo',entradaEstoque,name="Cadastra Estoque MS CS" ),
     path('Estoque/saida/',saidaEstoque,name='Saida de estoque'),
+    path('Estoque/saida/codigo',saidaEstoqueCodigo,name='Saida de estoque codigo'),
     path('Estoque/listaentradas',listaEntradasEstoque,name='Lista de entradas de estoque'),
     path('Estoque/listasaidas',listaSaidasEstoque,name='Lista de saídas de estoque'),
     path('Atendimento/',TemplateView.as_view(template_name='atendimentos/atendimentos.html'),name='AtendimentoInicio'),
@@ -36,6 +37,8 @@ urlpatterns = [
     path('Relatorios',TemplateView.as_view(template_name='relatorios/relatorios.html'),name='Relatórios'),
     path('Relatorios/consumo-periodo',relatoriosConsumoPeriodo,name='Consumo por Período'),
     path('Relatorios/necessidade-periodo',relatoriosNecessidadePeriodo,name='Necessidade por Período'),
-    path('Relatorios/atendimentosvoluntario',relatorioAtendimentoVoluntario,name='Atendimentos por Voluntario')
+    path('Relatorios/atendimentosvoluntario',relatorioAtendimentoVoluntario,name='Atendimentos por Voluntario'),
+    path('Relatorios/produtosporassistido',produtosEntreguesPorAssistido,name='Produtos Entregues por Assistido'),
+    path('Relatorios/atendidosperiodo',relatorioAtendidosPeriodo,name='Atendidos por Periodo'),
 
 ]

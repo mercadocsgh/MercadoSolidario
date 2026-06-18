@@ -35,8 +35,8 @@ class FormAtendimento(forms.Form):
     max_fam.widget.attrs['readonly'] = '1'
     quantidade =forms.IntegerField(required=True,initial=1,min_value=1)
     quantidade.widget.attrs['class'] = 'form-control'
-    dataValidade = forms.DateTimeField(required=True,label='Data de Validade')
-    dataValidade.widget.attrs['class'] = 'form-control'
+    #dataValidade = forms.DateTimeField(required=True,label='Data de Validade')
+    #dataValidade.widget.attrs['class'] = 'form-control'
 
 
 class FormEntradaEstoque(forms.Form):

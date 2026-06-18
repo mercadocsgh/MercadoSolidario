@@ -2,7 +2,8 @@ from asyncio.proactor_events import _ProactorBasePipeTransport
 from copy import copy
 from doctest import testfile
 from email import message
-from unittest import result
+from math import ceil
+from unittest import case, result
 from django.shortcuts import render
 from django.utils.formats import date_format
 from .models import *
@@ -13,7 +14,7 @@ from django.contrib.auth import logout
 from django.http import HttpResponseRedirect, HttpResponse
 from .forms import *
 from datetime import date, datetime
-from django.db import connection
+from django.db import connection, transaction
 from django.contrib import messages
 from datetime import date, datetime
 from django.db.models.functions import Concat
@@ -22,6 +23,40 @@ from django.urls import reverse
 from zoneinfo import ZoneInfo
 from django.utils import timezone
 # Create your views here.
+import json
+
+
+'''
+        gramas = 'g', _('g')
+        kg     = 'kg', _('Kg')
+        un     = 'un', _('unidade')
+        sache  = 'sache', _('sache')
+        pct    = 'pct', _('pacote')
+        pctp   = 'pctp', _('pacote peq')
+        pctg   = 'pctg', _('pacote grande')
+        ml     = 'ml', _('ml')
+        lata   = 'lata', _('lata')
+        l      = 'l', _('litro')
+        frasco = 'frasco', _('frasco')
+        pote   = 'pote', _('pote')
+
+'''
+def convert_tokg(unit, quantity):
+   match unit:
+      case 'g' | 'ml':
+         return quantity / 1000.0
+      case 'kg'|'l':
+         return quantity * 1.0  
+      case 'lata' | 'frasco' | 'un' | 'pote':
+         return quantity * 0.100  # assuming 150ml per lata
+      case 'sache':
+         return quantity * 0.050  # assuming 50g per sache
+      case 'pct' | 'pctp':           
+         return quantity * 0.150  # assuming 100g per pacote pequeno 
+      case 'pctg':
+         return quantity * 0.300  # assuming 500g per pacote grande  
+      case _:
+         return 0
 
 def logout_view(request):
     logout(request)
@@ -100,6 +135,11 @@ def getEstoquePorCategoria():
         row = cursor.fetchall()
         result = fromCursorToTableData(cursor, row)
     return result
+
+@login_required
+def entradaEstoqueTemplate(request):
+   produtos = ProdutoSolidario.objects.all().filter(ativo=1).order_by('id_categoria','quantidade','unidade')
+   return render(request, 'estoque/entrada_estoque.html', {'produtos': produtos})
 
 @login_required
 def entradaEstoque(request):
@@ -331,13 +371,13 @@ def codigoMercado(request):
         form = FormAtendimento(request.POST)
         if request.POST.__contains__('quantidade'):
             # check whether it's valid: e data de validade maior que hoje.
-            if form.is_valid() and (form.cleaned_data['dataValidade'].isoformat() >= datetime.now().isoformat()):
+            if form.is_valid() : #and (form.cleaned_data['dataValidade'].isoformat() >= datetime.now().isoformat()):
                 # save data
                 #id_produto = ProdutoSolidario(request.POST.__getitem__('idp'))
                 #id_produto.id = 
                 quantidade = request.POST.__getitem__('quantidade')
                 # com o uso do widget do forms -> validade = request.POST.__getitem__('dataValidade_year') + '-' + request.POST.__getitem__('dataValidade_month') + '-' + request.POST.__getitem__('dataValidade_day')
-                validade = request.POST.__getitem__('dataValidade')
+                #validade = request.POST.__getitem__('dataValidade')
                 # Cria registro e mostra mensagem de sucesso.
                 atendimento = AtendimentoRascunho.objects.filter(id=request.COOKIES.get('rascunho_id')).first()
                 codbar = CodBarProdSol.objects.filter(codigo_barras=request.POST.__getitem__('codigo_barras')).first()
@@ -352,7 +392,7 @@ def codigoMercado(request):
                                                                 id_codigo=codbar.id_produto,
                                                                 produto=produto,
                                                                 quantidade=quantidade,
-                                                                validade=validade,
+                                                                #validade=validade,
                                                                 solidarios=solidarios,
                                                                 )
                 messages.success(request, "Item Inserido na Lista com Sucesso")
@@ -648,71 +688,84 @@ def alterarItem(request,id=0):
 
 @login_required
 def concluirAtendimento(request):
-    # if this is a POST request we need to process the form data
-    if request.method == 'POST':
-        value = request.COOKIES.get('rascunho_id')
-        if not value:
-            response = HttpResponseRedirect("rascunho")
-            messages.error(request, "Atendimento já foi encerrado.")
-            return response
-        # pega os dados do post e prepara para o processamento
-        rascunho = AtendimentoRascunho.objects.get(id__exact=value)
-        itens = ItensAtendimentoRascunho.objects.filter(id_atendimento_id=rascunho.id)
-        
-        # verifica se há itens no estoque que podem ser dado baixa.
-        #flag = 0
-        #for item in itens:
-        #    #print(codProdSol)
-        #    estoques = Estoque.objects.filter(id_produto=item.id_codigo,validade=item.validade)
-        #    for estoque in estoques:
-        #      if estoque.quantidade - estoque.quantidade_saida >= item.quantidade:
-        #        flag += 1
-        #        break
-       
-        # se tiver todos os itens dá baixa no estoque
-        #if len(itens) == flag:
-        for item in itens:
-            estoques = Estoque.objects.filter(id_produto=item.id_codigo,validade=item.validade)
-            for estoque in estoques:
-            #  if estoque.quantidade - estoque.quantidade_saida >= item.quantidade:
-                estoque.quantidade_saida = estoque.quantidade_saida + item.quantidade
-                estoque.quantidade = estoque.quantidade - item.quantidade
-                estoque.save()
-                break
-        # se não tiver todos os itens gera mensagem de erro.
-        #else:
-        #    response = HttpResponseRedirect("rascunho")
-        #    messages.error(request, "Para um ou mais itens não foi encontrado estoque suficiente para dar baixa.")
-        #    return response
-        # copia a tabela para a tabela atendimento
-        kwargs = model_to_dict(rascunho,exclude=['id'])
-        assistido = rascunho.id_assistido
-        kwargs['data'] = datetime.now()
-        kwargs['id_assistido'] = assistido
-        kwargs['data_hora_inicio'] = rascunho.data_hora_inicio
-        atendimento = Atendimento.objects.create(**kwargs)
-        # copia os itens da tabela itensRascunho para a tabela itens
-        for item in itens:
-            kwargs = model_to_dict(item,exclude=['id'])
-            kwargs['id_atendimento']=atendimento
-            tmp = ProdutoSolidario.objects.get(id__exact=kwargs['id_codigo'])
-            kwargs['id_codigo']=tmp
-            tmp = ItensAtendimento.objects.create(**kwargs)
+   # if this is a POST request we need to process the form data
+   if request.method == 'POST':
+      value = request.COOKIES.get('rascunho_id')
+      if not value:
+         response = HttpResponseRedirect("rascunho")
+         messages.error(request, "Atendimento já foi encerrado.")
+         return response
+      # pega os dados do post e prepara para o processamento
+      rascunho = AtendimentoRascunho.objects.get(id__exact=value)
+      itens = ItensAtendimentoRascunho.objects.filter(id_atendimento_id=rascunho.id)
+
+      # se tiver todos os itens dá baixa no estoque
+      #if len(itens) == flag:
+      lista_nao_encontrado = []
+      nao_encontrado = False
+      for item in itens:
+         #estoques = Estoque.objects.filter(id_produto=item.id_codigo,validade=item.validade)
+         estoques = Estoque.objects.filter(id_produto=item.id_codigo)
+         if not estoques:
+               nao_encontrado = True
+               lista_nao_encontrado.append(item.id_codigo)
+               
+      if nao_encontrado:
+         reponse = lista_nao_encontrado
+         response = HttpResponseRedirect('/Mercado/Atendimento/rascunho')
+         messages.error(request, "Para um ou mais itens não foi encontrado estoque suficiente para dar baixa. Itens sem estoque: " + str(lista_nao_encontrado))
+         return response
+      
+      else:
+         with transaction.atomic():
+            for item in itens:
+                  #estoques = Estoque.objects.filter(id_produto=item.id_codigo,validade=item.validade)
+                  estoques = Estoque.objects.filter(id_produto=item.id_codigo)
+                  flagEstoqueOk = False
+                  for estoque in estoques:
+                     if estoque.quantidade - estoque.quantidade_saida >= item.quantidade:
+                        estoque.quantidade_saida = estoque.quantidade_saida + item.quantidade
+                        #estoque.quantidade = estoque.quantidade - item.quantidade
+                        estoque.save()
+                        flagEstoqueOk = True
+                        break
+                  # se não tiver quantidade suficiente nos itens insere estoque negativo no primeiro item encontrado
+                  if not flagEstoqueOk:
+                     estoques[0].quantidade_saida = estoques[0].quantidade_saida + item.quantidade
+                     estoques[0].save()
+            #else:
+            #    response = HttpResponseRedirect("rascunho")
+            #    messages.error(request, "Para um ou mais itens não foi encontrado estoque suficiente para dar baixa.")
+            #    return response
+            # copia a tabela para a tabela atendimento
+            kwargs = model_to_dict(rascunho,exclude=['id'])
+            assistido = rascunho.id_assistido
+            kwargs['data'] = datetime.now()
+            kwargs['id_assistido'] = assistido
+            kwargs['data_hora_inicio'] = rascunho.data_hora_inicio
+            atendimento = Atendimento.objects.create(**kwargs)
+            # copia os itens da tabela itensRascunho para a tabela itens
+            for item in itens:
+                  kwargs = model_to_dict(item,exclude=['id'])
+                  kwargs['id_atendimento']=atendimento
+                  tmp = ProdutoSolidario.objects.get(id__exact=kwargs['id_codigo'])
+                  kwargs['id_codigo']=tmp
+                  tmp = ItensAtendimento.objects.create(**kwargs)
+                  
+            #Seta atendimento como concluido
+            atendimento.finalizado = True
             
-        #Seta atendimento como concluido
-        atendimento.finalizado = True
-        
-        #apaga rascunhos
-        itens = ItensAtendimentoRascunho.objects.filter(id_atendimento_id=rascunho.id).delete()
-        rascunho = AtendimentoRascunho.objects.filter(id__exact=value).delete()
-        #remove cookies
-        #retorna na tela de atendimentos
-        response = HttpResponseRedirect('/Mercado/Atendimento')
-        messages.success(request, "Atendimento Encerrado com sucesso")
-        response.delete_cookie('rascunho_id')
-        response.delete_cookie('solidarios')
-        response.delete_cookies('assistido')
-        return response
+            #apaga rascunhos
+            itens = ItensAtendimentoRascunho.objects.filter(id_atendimento_id=rascunho.id).delete()
+            rascunho = AtendimentoRascunho.objects.filter(id__exact=value).delete()
+            #remove cookies
+            #retorna na tela de atendimentos
+            response = HttpResponseRedirect('/Mercado/Atendimento')
+            messages.success(request, "Atendimento Encerrado com sucesso")
+            response.delete_cookie('rascunho_id')
+            response.delete_cookie('solidarios')
+            response.delete_cookie('assistido')
+            return response
 
 def emDesenvolvimento(request):
     return render(request,'em_desenvolvimento.html')
@@ -730,7 +783,8 @@ def relatoriosConsumoPeriodo(request):
       # se for um POST
       inicial = datetime.strptime(request.POST.__getitem__('inicial'), '%d/%m/%Y').date()
       final  = datetime.strptime(request.POST.__getitem__('final'), '%d/%m/%Y').date()
-
+      #print(inicial)
+      #print(final)
     #with connection.cursor() as cursor:
     #    cursor.execute(
     #        'select * from concat(cat.Categoria," ",pro.quantidade,pro.unidade) as produto ,sum(est.quantidade) as quantidade, pro.estoque_minimo from Mercado_estoque est, Mercado_categoria cat, Mercado_produtosolidario pro where cat.id = pro.id_categoria_id and est.id_id = pro.id group by est.id_produto_id ORDER BY produto;')
@@ -739,14 +793,22 @@ def relatoriosConsumoPeriodo(request):
 
     atendimentos = Atendimento.objects.filter(data__gte=inicial,data__lte=final).values_list('id')
 
-    #print(atendimentos)
-    itensAtendimentos = ItensAtendimento.objects.filter(id_atendimento_id__in=atendimentos).values('produto').annotate(tot_itens=Sum('quantidade'))
+    #print(list(atendimentos))
+    itensAtendimentos = ItensAtendimento.objects.filter(id_atendimento_id__in=atendimentos).values('produto','id_codigo_id').annotate(tot_itens=Sum('quantidade'))
     #print(itensAtendimentos)
+
+    tot_kg = 0
+    for item in itensAtendimentos:
+      produto = ProdutoSolidario.objects.filter(id__exact=item['id_codigo_id']).first()
+      item['kg'] = ceil(convert_tokg(produto.unidade, produto.quantidade) * item['tot_itens'])
+      tot_kg += item['kg']
+
     context = {
         'atendimentos' : atendimentos,
         'itens_atendimentos' : itensAtendimentos,
         'inicial': inicial,
-        'final': final
+        'final': final,
+        'tot_kg': tot_kg
     }
     return render(request,'relatorios/consumo_periodo.html',{ 'context': context })
 
@@ -866,7 +928,83 @@ def relatorioAtendimentoVoluntario(request):
                 'nVoluntarios': nVoluntarios,
                 'tempo_medio_geral':f'{(tempoTotalAtendimento//tot_atendimentos)/60:02.2f}',
                 'atendimentos' : atendimentos,
+                'inicial': inicial,
+                'final': final,
                 }
     
     return render(request,'relatorios/atendimentos_voluntario.html',{ 'context': context })
 
+@login_required
+def produtosEntreguesPorAssistido(request):
+   assistidos= PessoasAtendimento.objects.all().filter(ativo=True).order_by('nome')
+   if request.method == 'POST':
+      #print(dict(request.POST.items()))
+      inicial = datetime.strptime(request.POST.__getitem__('inicial'), '%d/%m/%Y').date()
+      final  = datetime.strptime(request.POST.__getitem__('final'), '%d/%m/%Y').date()
+      #print(inicial,final)
+      assistido = PessoasAtendimento.objects.get(id__exact=request.POST.__getitem__('assistido'))
+      atendimentos = Atendimento.objects.filter(id_assistido=assistido.id,data__gte=inicial,data__lte=final).order_by('data')
+      #print(dict(atendimentos))
+      itensAtendimentos = ItensAtendimento.objects.filter(id_atendimento_id__in=atendimentos.values_list('id')).values('id_atendimento','produto','quantidade').annotate(tot_solidarios=F('quantidade')*F('solidarios')).order_by('id_atendimento_id', 'produto')
+      #print(json.dumps(list(itensAtendimentos)))
+      context = {
+          'assistidos' : assistidos,
+          'assistido' : assistido,
+          'atendimentos' : atendimentos,
+          'itens_atendimentos' : itensAtendimentos,
+          'inicial': inicial,
+          'final': final,
+      }
+      return render(request,'relatorios/produtos_entregues.html',{ 'context': context }) 
+   else:
+      # Se for o primeiro GET (a partir do menu) mostra o relátorio do mês corrente
+      #https://stackoverflow.com/questions/37396329/finding-first-day-of-the-month-in-python
+      #https://www.tutorialspoint.com/number-of-days-in-a-month-in-python#:~:text=Practical%20Data%20Science%20using%20Python&text=Suppose%20we%20have%20one%20year,then%20the%20result%20is%2029.&text=if%20m%20is%20in%20the,31%2C%20otherwise%2C%20return%2030.
+      #assistidos = PessoasAtendimento.objects.all().order_by('nome')
+      context = {
+          'assistidos' : assistidos,
+      }
+      return render(request,'relatorios/produtos_entregues.html',{ 'context': context })
+
+@login_required
+def relatorioAtendidosPeriodo(request):
+    if request.method == 'GET':
+      # Se for o primeiro GET (a partir do menu) mostra o relátorio do mês corrente
+      #https://stackoverflow.com/questions/37396329/finding-first-day-of-the-month-in-python
+      #https://www.tutorialspoint.com/number-of-days-in-a-month-in-python#:~:text=Practical%20Data%20Science%20using%20Python&text=Suppose%20we%20have%20one%20year,then%20the%20result%20is%2029.&text=if%20m%20is%20in%20the,31%2C%20otherwise%2C%20return%2030.
+      inicial = datetime.today().replace(day=1)
+      final  = datetime.today().replace(day=numberOfDays( inicial.year,inicial.month ))
+    else:
+      # se for um POST
+      inicial = datetime.strptime(request.POST.__getitem__('inicial'), '%d/%m/%Y').date()
+      final  = datetime.strptime(request.POST.__getitem__('final'), '%d/%m/%Y').date()
+
+    with connection.cursor() as cursor:
+        cursor.execute(
+            'SELECT \
+               a.id, \
+               pa.nome AS assistido, \
+               a.atendente, \
+               TIMEDIFF(COALESCE(a.data_hora_termino, NOW()), a.data_hora_inicio) AS tempo_atendimento, \
+               COALESCE(SUM(ia.solidarios * ia.quantidade), 0)                             AS solidarios_usados, \
+               a.data , \
+               a.solidarios as solidarios_disponiveis \
+               FROM Mercado_atendimento AS a \
+               LEFT JOIN Mercado_pessoasatendimento AS pa \
+               ON pa.id = a.id_assistido_id \
+               LEFT JOIN Mercado_itensatendimento AS ia \
+               ON ia.id_atendimento_id = a.id \
+               WHERE a.data BETWEEN \''+ str(inicial) +'\'  AND \''+ str(final) + '\' \
+               AND a.data_hora_inicio IS NOT NULL \
+               GROUP BY a.id \
+               ORDER BY a.data, a.id;'    
+            )
+        row = cursor.fetchall()
+        atendimentos = fromCursorToTableData(cursor, row)
+
+    context = {
+        'atendimentos' : atendimentos,
+        'inicial': inicial,
+        'final': final,
+    }
+    return render(request,'relatorios/atendidos_periodo.html',{ 'context': context })

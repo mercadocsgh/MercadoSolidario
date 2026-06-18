@@ -5,7 +5,7 @@
 <div class="container">
   <div class="row">
     <div class="col text-center">
-      <h2>Relatório de Consumo por Período - Mercado Solidário CS</h2>
+      <h2>Relatório de atendidos por período - Mercado Solidário CS</h2>
     </div>
   </div>
 </div>
@@ -26,40 +26,36 @@
       </div>
     </form>
 </div>
-<div class="container mt-4 mb-2 border">
-  <div class="row mt-4 mb-4">
-    <div class="col">
-      <h4>Período: {{ context.inicial|date:"d/m/Y" }} - {{ context.final|date:"d/m/Y" }}</h4>
-      </div>   
-      <div class="col text-end">
-        <h4>Total de Kg (estimado): {{ context.tot_kg }}</h4>
-      </div>
-  </div>
-</div>
 <div class="container">
   <div class="row">
     <div class="col">
-      <table id="tbProdutos" class="stripe hover" style="width:100%; padding-top: 1em;  padding-bottom: 1em;">		
+      <table id="tbAtendimentos" class="stripe hover" style="width:100%; padding-top: 1em;  padding-bottom: 1em;">		
         <thead> 
                 <tr>
-                    <th>Produto</th>
-                    <th scope="col" style="text-align:center;">Quantidade</th>  
-                    <th scope="col" style="text-align:center;">Peso em Kg (estimado)</th>
+                    <th scope="col" style="text-align:center;">Atendido</th>
+                    <th scope="col" style="text-align:center;">Atendente</th>
+                    <th scope="col" style="text-align:center;">Tempo</th>
+                    <th scope="col" style="text-align:center;">Solidários Disponíveis</th>
+                    <th scope="col" style="text-align:center;">Solidários Usados</th>
+                    <th scope="col" style="text-align:center;">Data</th>
                 </tr>
             </thead>
             <tbody>
-                {% for produto in context.itens_atendimentos %}
+                {% for atendimento in context.atendimentos %}
                 <tr>
-                    <td>{{ produto.produto}}</td>
-                    <td style="text-align:center;">{{ produto.tot_itens }}</td>
-                    <td style="text-align:center;">{{ produto.kg }}</td>
+                    <td>{{ atendimento.assistido}}</td>
+                    <td style="text-align:center;">{{ atendimento.atendente }}</td>
+                    <td style="text-align:center;">{{ atendimento.tempo_atendimento }}</td>
+                    <td style="text-align:center;">{{ atendimento.solidarios_disponiveis }}</td>
+                    <td style="text-align:center;">{{ atendimento.solidarios_usados }}</td>
+                    <td style="text-align:center;">{{ atendimento.data }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
          <script lang="javascript">
             $(document).ready( function () {
-                var table = $('#tbProdutos').DataTable( {
+                var table = $('#tbAtendimentos').DataTable( {
                     language: {
                     url: 'https://cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/Portuguese-Brasil.json'
                     },
