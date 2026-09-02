@@ -24,7 +24,7 @@
          <tbody>
             <tr>
                <td>{{ estoque.id_produto}}</td>
-               <td>{{ estoque.quantidade }}</td>
+               <td>{{ estoque.em_estoque }}</td>
                <td>{{ estoque.validade }}</td>
             </tr>
          </tbody>
@@ -39,7 +39,7 @@
 
         <form id="registro" method="POST">
           {% csrf_token %}
-          <input type="number" name="quantidade_saida" id="quantidade" class="form-control mt-3" min=1 max={{ estoque.quantidade }} placeholder="Quantidade para Saída" required>
+          <input type="number" name="quantidade_saida" id="quantidade" class="form-control mt-3" min="1" max="{{ estoque.em_estoque }}" placeholder="Quantidade para Saída" required>
           <select class="form-select mt-3" name="motivo" id="motivo" required>
             <option value="" disabled selected>Selecione o Motivo de Saída</option>
             {% for motivo in motivos %}
