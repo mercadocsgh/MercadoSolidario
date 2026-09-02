@@ -217,8 +217,7 @@ def saidaEstoqueCodigo(request):
                                                      validade=estoque.validade,
                                                      )
             Estoque.objects.filter(id=estoque.id).update(
-                quantidade_saida=int(request.POST.__getitem__('quantidade_saida'))+int(estoque.quantidade_saida),
-                quantidade=int(estoque.quantidade)-int(request.POST.__getitem__('quantidade_saida')))
+                quantidade_saida=int(request.POST.__getitem__('quantidade_saida'))+int(estoque.quantidade_saida))
             messages.success(request, "Saída de Estoque Criado com Sucesso")
             return HttpResponseRedirect('../saida/')
         else:
