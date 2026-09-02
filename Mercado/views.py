@@ -208,16 +208,37 @@ def saidaEstoqueCodigo(request):
         # É o post com os dados para cadastrar
         if request.POST.__contains__('quantidade_saida'):
             id_estoque = request.POST.__getitem__('id_estoque')
-            estoque = Estoque.objects.filter(id=id_estoque)[0]
-            saidaEstoque=EstoqueSaida.objects.create(id_produto=estoque.id_produto,
-                                                     quantidade_saida=request.POST.__getitem__('quantidade_saida'),
-                                                     quem_cadastrou=request.user.username,
-                                                     data=datetime.now(),
-                                                     motivo=Motivo.objects.filter(id=request.POST.__getitem__('motivo')).first(),
-                                                     validade=estoque.validade,
-                                                     )
-            Estoque.objects.filter(id=estoque.id).update(
-                quantidade_saida=int(request.POST.__getitem__('quantidade_saida'))+int(estoque.quantidade_saida))
+            motivos = Motivo.objects.all().order_by('nome')
+
+            try:
+                quantidade_saida = int(request.POST.__getitem__('quantidade_saida'))
+            except (TypeError, ValueError):
+                estoque = Estoque.objects.filter(id=id_estoque).first()
+                messages.error(request, "Informe uma quantidade válida para retirada.")
+                return render(request, 'estoque/estoque_saida_codigo.html', {'estoque': estoque, 'motivos': motivos})
+
+            # Bloqueia o registro durante a validação e a baixa, evitando que
+            # retiradas simultâneas utilizem o mesmo saldo disponível.
+            with transaction.atomic():
+                estoque = Estoque.objects.select_for_update().filter(id=id_estoque).first()
+                quantidade_disponivel = estoque.em_estoque if estoque else 0
+
+                if quantidade_saida < 1 or quantidade_saida > quantidade_disponivel:
+                    messages.error(
+                        request,
+                        f"Quantidade indisponível. Há {quantidade_disponivel} unidade(s) disponível(is) para retirada."
+                    )
+                    return render(request, 'estoque/estoque_saida_codigo.html', {'estoque': estoque, 'motivos': motivos})
+
+                EstoqueSaida.objects.create(id_produto=estoque.id_produto,
+                                            quantidade_saida=quantidade_saida,
+                                            quem_cadastrou=request.user.username,
+                                            data=datetime.now(),
+                                            motivo=Motivo.objects.filter(id=request.POST.__getitem__('motivo')).first(),
+                                            validade=estoque.validade,
+                                            )
+                estoque.quantidade_saida += quantidade_saida
+                estoque.save(update_fields=['quantidade_saida'])
             messages.success(request, "Saída de Estoque Criado com Sucesso")
             return HttpResponseRedirect('../saida/')
         else:
