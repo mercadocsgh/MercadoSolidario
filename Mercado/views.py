@@ -817,10 +817,12 @@ def relatoriosConsumoPeriodo(request):
     itensAtendimentos = ItensAtendimento.objects.filter(id_atendimento_id__in=atendimentos).values('produto','id_codigo_id').annotate(tot_itens=Sum('quantidade'))
     #print(itensAtendimentos)
 
+    tot_itens = 0
     tot_kg = 0
     for item in itensAtendimentos:
       produto = ProdutoSolidario.objects.filter(id__exact=item['id_codigo_id']).first()
       item['kg'] = ceil(convert_tokg(produto.unidade, produto.quantidade) * item['tot_itens'])
+      tot_itens += item['tot_itens']
       tot_kg += item['kg']
 
     context = {
@@ -828,6 +830,7 @@ def relatoriosConsumoPeriodo(request):
         'itens_atendimentos' : itensAtendimentos,
         'inicial': inicial,
         'final': final,
+        'tot_itens': tot_itens,
         'tot_kg': tot_kg
     }
     return render(request,'relatorios/consumo_periodo.html',{ 'context': context })
@@ -918,27 +921,30 @@ def relatorioAtendimentoVoluntario(request):
         if row['atendente'] != 'N/A':
             nVoluntarios += 1
 
-    min_inicial = Atendimento.objects.filter(data__gte=inicial,data__lte=final).values('data_hora_inicio').order_by('data_hora_inicio').first()
-    max_final = Atendimento.objects.filter(data__gte=inicial,data__lte=final).values('data_hora_termino').order_by('data_hora_termino').last()
-    
-    #ajustar para timezone local para exibir os horários. a base grava em UTC
-    hora_final=max_final['data_hora_termino']
-    hora_inicial=min_inicial['data_hora_inicio']
-    #print('hora_final',hora_final)
-    #print('hora_inicial',hora_inicial)
+    hora_inicial = None
+    hora_final = None
+    tempoTotalAtendimento = 0
 
+    if tot_atendimentos > 0:
+        atendimentos_concluidos = Atendimento.objects.filter(
+            data__gte=inicial,
+            data__lte=final,
+            data_hora_inicio__isnull=False,
+            data_hora_termino__isnull=False,
+        )
+        primeiro = atendimentos_concluidos.order_by('data_hora_inicio').first()
+        ultimo = atendimentos_concluidos.order_by('data_hora_termino').last()
 
-    hora_inicial = timezone.localtime(hora_inicial)
-    hora_final = timezone.localtime(hora_final)
+        if primeiro and ultimo:
+            # Ajusta para o timezone local para exibir os horários; a base grava em UTC.
+            hora_inicial = timezone.localtime(primeiro.data_hora_inicio)
+            hora_final = timezone.localtime(ultimo.data_hora_termino)
+            tempoTotalAtendimento = max(0, int((hora_final - hora_inicial).total_seconds()))
 
-    #print('hora_final',hora_final)
-    #print('hora_inicial',hora_inicial)
-
-    tempoTotalAtendimento = int((hora_final - hora_inicial).total_seconds())
-    
-    tempoTotAtendHoras    = tempoTotalAtendimento // 3600
-    tempoTotAtendMinutos  = (tempoTotalAtendimento % 3600) // 60
+    tempoTotAtendHoras = tempoTotalAtendimento // 3600
+    tempoTotAtendMinutos = (tempoTotalAtendimento % 3600) // 60
     tempoTotAtendSegundos = tempoTotalAtendimento % 60
+    tempo_medio_geral = (tempoTotalAtendimento / tot_atendimentos / 60) if tot_atendimentos else 0
                                                
     context = {
                 'primeiroAtendimento':hora_inicial,
@@ -946,7 +952,7 @@ def relatorioAtendimentoVoluntario(request):
                 'tempoTotalAtendimento': f'{tempoTotAtendHoras:02d}:{tempoTotAtendMinutos:02d}:{tempoTotAtendSegundos:02d}', 
                 'nAtendimentos': tot_atendimentos,
                 'nVoluntarios': nVoluntarios,
-                'tempo_medio_geral':f'{(tempoTotalAtendimento//tot_atendimentos)/60:02.2f}',
+                'tempo_medio_geral':f'{tempo_medio_geral:02.2f}',
                 'atendimentos' : atendimentos,
                 'inicial': inicial,
                 'final': final,
