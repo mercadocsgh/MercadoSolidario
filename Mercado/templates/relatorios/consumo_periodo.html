@@ -30,10 +30,13 @@
   <div class="row mt-4 mb-4">
     <div class="col">
       <h4>Período: {{ context.inicial|date:"d/m/Y" }} - {{ context.final|date:"d/m/Y" }}</h4>
-      </div>   
-      <div class="col text-end">
-        <h4>Total de Kg (estimado): {{ context.tot_kg }}</h4>
-      </div>
+    </div>
+    <div class="col text-center">
+      <h4>Total de itens: {{ context.tot_itens }}</h4>
+    </div>
+    <div class="col text-end">
+      <h4>Total de Kg (estimado): {{ context.tot_kg }}</h4>
+    </div>
   </div>
 </div>
 <div class="container">

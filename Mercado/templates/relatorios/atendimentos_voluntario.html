@@ -60,6 +60,11 @@
    </div>
   <div class="row mt-3">
     <div class="col">
+      {% if not context.atendimentos %}
+      <div class="alert alert-info" role="alert">
+        Não houve atendimentos concluídos no período selecionado.
+      </div>
+      {% endif %}
       <table id="tbAtendimentos" class="stripe hover" style="width:100%; padding-top: 1em;  padding-bottom: 1em;">		
         <thead> 
                 <tr>
@@ -77,6 +82,13 @@
                 </tr>
                 {% endfor %}
             </tbody>
+            <tfoot>
+                <tr class="table-secondary fw-bold">
+                    <td>Total ({{ context.nVoluntarios }} voluntário{{ context.nVoluntarios|pluralize }})</td>
+                    <td style="text-align:center;">{{ context.nAtendimentos }}</td>
+                    <td style="text-align:center;">{{ context.tempo_medio_geral }}</td>
+                </tr>
+            </tfoot>
         </table>
          <script lang="javascript">
             $(document).ready( function () {
